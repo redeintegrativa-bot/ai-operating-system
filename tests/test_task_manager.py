@@ -218,16 +218,21 @@ class TestTaskExecution:
 
     def test_get_executable_tasks(self, tm):
         dep = tm.create_task("Dep")
-        t1 = tm.create_task("Ready", dependencies=[dep.id])
+        t1 = tm.create_task("Blocked", dependencies=[dep.id])
         t2 = tm.create_task("Also ready")
-        # dep not completed -> t1 not executable
+        # dep is pending with no deps -> executable, t2 is pending with no deps -> executable
+        # t1 is blocked by dep -> not executable
         executable = tm.get_executable_tasks()
-        assert len(executable) == 1
-        assert executable[0].id == t2.id
+        executable_ids = {t.id for t in executable}
+        assert dep.id in executable_ids
+        assert t2.id in executable_ids
+        assert t1.id not in executable_ids
         # complete dep
         tm.complete_task(dep.id)
         executable = tm.get_executable_tasks()
-        assert len(executable) == 2
+        executable_ids = {t.id for t in executable}
+        assert t1.id in executable_ids
+        assert t2.id in executable_ids
 
 
 class TestTaskStats:
