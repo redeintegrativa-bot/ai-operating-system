@@ -52,7 +52,7 @@ class ProxyInfo:
     @property
     def is_usable(self) -> bool:
         """Check if proxy is usable (max 3 failures)."""
-        return self.fail_count < 3
+        return self.fail_count < self._max_failures if hasattr(self, '_max_failures') else self.fail_count < 3
 
 
 class ProxyManager:
@@ -129,7 +129,7 @@ class ProxyManager:
                 protocol = ProxyProtocol.HTTP
             elif scheme == "socks4":
                 protocol = ProxyProtocol.SOCKS4
-            elif scheme in ("socks5", "socks5h"):
+            elif scheme == "socks5":
                 protocol = ProxyProtocol.SOCKS5
             else:
                 logger.warning(f"Unsupported protocol: {scheme}")
