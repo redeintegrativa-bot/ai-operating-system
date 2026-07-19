@@ -1,39 +1,83 @@
 /**
  * AIOS Mission Control - Dashboard Page
  * System overview with stats, activity feed, charts, and status.
+ * Fetches real data from Kernel API via the Store.
  */
 const Pages = window.Pages || {};
 
 Pages.Dashboard = {
+  /** @type {Function|null} Store unsubscribe handle */
+  _unsubscribe: null,
+
   render() {
+    const el = document.createElement('div');
+    el.className = 'dashboard-page animate-fade-in';
+
+    // Show loading state immediately
+    el.innerHTML = this._renderLoading();
+
+    // Subscribe to data changes and re-render
+    this._unsubscribe = Store.subscribe('*', () => {
+      if (this._renderedEl && this._renderedEl.parentNode) {
+        this._updateDashboard(this._renderedEl);
+      }
+    });
+
+    this._renderedEl = el;
+
+    // Populate with current data (may be mock or already fetched)
+    this._updateDashboard(el);
+
+    return el;
+  },
+
+  destroy() {
+    if (this._unsubscribe) {
+      this._unsubscribe();
+      this._unsubscribe = null;
+    }
+  },
+
+  _updateDashboard(el) {
     const agents = Store.state.agents;
     const missions = Store.state.missions;
     const tasks = Store.state.tasks;
     const memories = Store.state.memories;
+    const dashboard = Store.state.dashboard;
+    const isLoading = Store.isLoading();
+    const error = Store.getFirstError();
 
-    const onlineCount = agents.filter(a => a.status === 'online').length;
+    // Use real API data when available, otherwise derive from collections
+    const onlineCount = dashboard
+      ? (dashboard.agents ? dashboard.agents.online : 0)
+      : agents.filter(a => a.status === 'online').length;
+    const totalAgents = dashboard
+      ? (dashboard.agents ? dashboard.agents.total : agents.length)
+      : agents.length;
     const activeMissions = missions.filter(m => m.status === 'active').length;
-    const inProgressTasks = tasks.filter(t => t.column === 'in_progress').length;
+    const completedMissions = missions.filter(m => m.status === 'completed').length;
+    const inProgressTasks = dashboard
+      ? (dashboard.tasks ? dashboard.tasks.pending : 0)
+      : tasks.filter(t => t.column === 'in_progress').length;
+    const doneTasks = dashboard
+      ? (dashboard.tasks ? dashboard.tasks.completed : 0)
+      : tasks.filter(t => t.column === 'done').length;
 
-    const el = document.createElement('div');
-    el.className = 'dashboard-page animate-fade-in';
-
-    // Row 1: Stat cards
     const statsHtml = `
       <div class="dashboard-stats">
-        ${this._statCard('Agents Online', onlineCount + '/' + agents.length, '🤖', 'blue', '+2 this week')}
-        ${this._statCard('Active Missions', activeMissions, '🎯', 'green', missions.filter(m => m.status === 'completed').length + ' completed')}
-        ${this._statCard('Tasks in Progress', inProgressTasks, '📋', 'orange', tasks.filter(t => t.column === 'done').length + ' completed')}
+        ${this._statCard('Agents Online', onlineCount + '/' + totalAgents, '🤖', 'blue', error ? 'API unavailable' : '+2 this week')}
+        ${this._statCard('Active Missions', activeMissions, '🎯', 'green', completedMissions + ' completed')}
+        ${this._statCard('Tasks in Progress', inProgressTasks, '📋', 'orange', doneTasks + ' completed')}
         ${this._statCard('Memory Entries', memories.length, '🧠', 'purple', '3 new this week')}
       </div>
     `;
 
-    // Row 2: Activity + Quick Actions
     const mainHtml = `
       <div class="dashboard-main">
         <div class="card">
           <div class="card-header">
             <span class="card-title">Recent Activity</span>
+            ${isLoading ? '<span class="badge badge-active">Syncing...</span>' : ''}
           </div>
           <div class="activity-feed">
             ${this._activityFeed()}
@@ -53,15 +97,15 @@ Pages.Dashboard = {
       </div>
     `;
 
-    // Row 3: Charts
     const activeMissionData = missions.filter(m => m.status === 'active');
     const barLabels = activeMissionData.map(m => m.name.length > 15 ? m.name.substring(0, 15) + '...' : m.name);
     const barData = activeMissionData.map(m => m.progress);
 
     const agentStatusCounts = {
-      online: agents.filter(a => a.status === 'online').length,
-      busy: agents.filter(a => a.status === 'busy').length,
-      offline: agents.filter(a => a.status === 'offline').length
+      online: dashboard && dashboard.agents ? dashboard.agents.online : agents.filter(a => a.status === 'online').length,
+      busy: dashboard && dashboard.agents ? dashboard.agents.busy : agents.filter(a => a.status === 'busy').length,
+      offline: (dashboard && dashboard.agents ? dashboard.agents.total : agents.length)
+        - (dashboard && dashboard.agents ? dashboard.agents.online + dashboard.agents.busy : agents.filter(a => a.status === 'online').length + agents.filter(a => a.status === 'busy').length)
     };
 
     const chartsHtml = `
@@ -81,7 +125,6 @@ Pages.Dashboard = {
       </div>
     `;
 
-    // Row 4: System Status
     const statusHtml = `
       <div class="dashboard-status">
         ${this._systemStatus('CPU', 34, 'green')}
@@ -91,9 +134,16 @@ Pages.Dashboard = {
       </div>
     `;
 
-    el.innerHTML = statsHtml + mainHtml + chartsHtml + statusHtml;
+    const errorHtml = error ? `
+      <div class="dashboard-error-bar">
+        <span class="dashboard-error-icon">⚠️</span>
+        <span class="dashboard-error-text">API Error: ${error}</span>
+        <button class="btn btn-sm btn-secondary" onclick="Store.fetchAll()">Retry</button>
+      </div>
+    ` : '';
 
-    // Render charts after DOM insert
+    el.innerHTML = errorHtml + statsHtml + mainHtml + chartsHtml + statusHtml;
+
     requestAnimationFrame(() => {
       const barContainer = el.querySelector('#mission-progress-chart');
       if (barContainer && barData.length > 0) {
@@ -116,8 +166,15 @@ Pages.Dashboard = {
         }));
       }
     });
+  },
 
-    return el;
+  _renderLoading() {
+    return `
+      <div class="dashboard-loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Connecting to Kernel API...</div>
+      </div>
+    `;
   },
 
   _statCard(title, value, icon, color, subtitle) {
