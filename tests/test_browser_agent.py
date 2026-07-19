@@ -1471,10 +1471,15 @@ class TestSessionRequestsHelpers:
         from src.agents.browser_agent.session_manager import SessionManager
         sm = SessionManager(storage_dir=tmp_project)
 
+        mock_cookie = MagicMock()
+        mock_cookie.name = "sid"
+        mock_cookie.value = "abc"
+        mock_cookie.domain = ".example.com"
+        mock_cookie.path = "/"
+
         mock_jar = MagicMock()
-        mock_jar.__iter__ = lambda self: iter(
-            [MagicMock(name="sid", value="abc", domain=".example.com", path="/")]
-        )
+        mock_jar.__iter__ = lambda self: iter([mock_cookie])
+        mock_jar.get_dict = MagicMock(return_value={"sid": "abc"})
 
         ok = sm.save_requests_cookies("req1", mock_jar)
         assert ok is True
