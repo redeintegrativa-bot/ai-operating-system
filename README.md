@@ -182,6 +182,12 @@ ai-operating-system/
 │   └── utils/
 │       ├── config_manager.py # Config loading
 │       └── logger.py        # Logging utilities
+├── plugins/
+│   └── browser-agent/       # Browser Agent marketplace plugin
+│       ├── manifest.json    # Plugin metadata & config
+│       ├── examples/        # Usage examples
+│       ├── LICENSE          # MIT License
+│       └── README.md        # Plugin documentation
 ├── tests/
 │   └── test_orchestrator.py # Core tests
 ├── .env.example             # Environment template
@@ -254,6 +260,30 @@ crontab -e
 ```
 
 See [`config/backup_cron.example`](config/backup_cron.example) for available cron configurations.
+
+## Plugins
+
+### Browser Agent
+
+Web browsing, scraping, OCR, screenshots, downloads, and search with proxy rotation and session persistence.
+
+```bash
+# Quick install
+pip install playwright && playwright install chromium
+
+# Full install (with OCR)
+pip install playwright pytesseract easyocr pdf2image
+playwright install chromium
+```
+
+```python
+from src.agents.browser_agent import BrowserAgent
+
+agent = BrowserAgent(project_root=".")
+result = agent.execute({"type": "browse", "url": "https://example.com"})
+```
+
+See [`plugins/browser-agent/`](plugins/browser-agent/) for full documentation.
 
 ## Testing
 
