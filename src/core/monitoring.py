@@ -174,34 +174,56 @@ class Monitor:
         checks = []
         
         try:
-            cpu_percent = psutil.cpu_percent(interval=1)
-            memory = psutil.virtual_memory()
-            
-            cpu_status = HealthStatus.HEALTHY
-            if cpu_percent > 90:
-                cpu_status = HealthStatus.UNHEALTHY
-            elif cpu_percent > 70:
-                cpu_status = HealthStatus.DEGRADED
-            
-            memory_status = HealthStatus.HEALTHY
-            if memory.percent > 90:
-                memory_status = HealthStatus.UNHEALTHY
-            elif memory.percent > 70:
-                memory_status = HealthStatus.DEGRADED
-            
-            checks.append(HealthCheck(
-                component="cpu",
-                status=cpu_status,
-                message=f"CPU usage: {cpu_percent}%",
-                timestamp=datetime.now()
-            ))
-            
-            checks.append(HealthCheck(
-                component="memory",
-                status=memory_status,
-                message=f"Memory usage: {memory.percent}%",
-                timestamp=datetime.now()
-            ))
+            if HAS_PSUTIL:
+                cpu_percent = psutil.cpu_percent(interval=1)
+                memory = psutil.virtual_memory()
+                
+                cpu_status = HealthStatus.HEALTHY
+                if cpu_percent > 90:
+                    cpu_status = HealthStatus.UNHEALTHY
+                elif cpu_percent > 70:
+                    cpu_status = HealthStatus.DEGRADED
+                
+                memory_status = HealthStatus.HEALTHY
+                if memory.percent > 90:
+                    memory_status = HealthStatus.UNHEALTHY
+                elif memory.percent > 70:
+                    memory_status = HealthStatus.DEGRADED
+                
+                checks.append(HealthCheck(
+                    component="cpu",
+                    status=cpu_status,
+                    message=f"CPU usage: {cpu_percent}%",
+                    timestamp=datetime.now()
+                ))
+                
+                checks.append(HealthCheck(
+                    component="memory",
+                    status=memory_status,
+                    message=f"Memory usage: {memory.percent}%",
+                    timestamp=datetime.now()
+                ))
+            else:
+                load_avg = os.getloadavg()
+                cpu_status = HealthStatus.HEALTHY
+                if load_avg[0] > 4.0:
+                    cpu_status = HealthStatus.UNHEALTHY
+                elif load_avg[0] > 2.0:
+                    cpu_status = HealthStatus.DEGRADED
+                
+                checks.append(HealthCheck(
+                    component="cpu",
+                    status=cpu_status,
+                    message=f"Load average: {load_avg[0]:.2f}",
+                    timestamp=datetime.now()
+                ))
+                
+                checks.append(HealthCheck(
+                    component="memory",
+                    status=HealthStatus.HEALTHY,
+                    message="Memory check requires psutil (install psutil for detailed metrics)",
+                    timestamp=datetime.now()
+                ))
             
             log_dir = os.path.join(self.project_root, "logs")
             log_accessible = os.path.exists(log_dir) and os.access(log_dir, os.W_OK)
