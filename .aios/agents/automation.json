@@ -1,0 +1,16 @@
+{
+  "name": "automation",
+  "mode": "autonomous",
+  "capabilities": [
+    "ci",
+    "cd",
+    "pipeline",
+    "deploy",
+    "monitoring"
+  ],
+  "max_concurrent_tasks": 3,
+  "heartbeat_interval_seconds": 30.0,
+  "auto_suggest": true,
+  "domain": "automation and DevOps",
+  "metadata": {}
+}

@@ -1,0 +1,15 @@
+{
+  "name": "engineer",
+  "mode": "manual",
+  "capabilities": [
+    "coding",
+    "implementation",
+    "fix",
+    "refactor"
+  ],
+  "max_concurrent_tasks": 3,
+  "heartbeat_interval_seconds": 30.0,
+  "auto_suggest": true,
+  "domain": "software engineering",
+  "metadata": {}
+}

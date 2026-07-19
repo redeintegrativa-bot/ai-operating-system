@@ -1,0 +1,13 @@
+{
+  "name": "orchestrator",
+  "mode": "autonomous",
+  "capabilities": [
+    "routing",
+    "coordination"
+  ],
+  "max_concurrent_tasks": 3,
+  "heartbeat_interval_seconds": 30.0,
+  "auto_suggest": false,
+  "domain": "orchestration",
+  "metadata": {}
+}

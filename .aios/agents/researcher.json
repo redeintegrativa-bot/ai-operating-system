@@ -1,0 +1,14 @@
+{
+  "name": "researcher",
+  "mode": "assisted",
+  "capabilities": [
+    "analysis",
+    "research",
+    "data"
+  ],
+  "max_concurrent_tasks": 3,
+  "heartbeat_interval_seconds": 30.0,
+  "auto_suggest": true,
+  "domain": "research and analysis",
+  "metadata": {}
+}
