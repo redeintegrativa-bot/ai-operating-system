@@ -3,7 +3,6 @@ from enum import Enum
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 import time
-import psutil
 import json
 import logging
 import os
@@ -12,6 +11,12 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import argparse
 from collections import defaultdict
+
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    HAS_PSUTIL = False
 
 
 class LogLevel(Enum):
