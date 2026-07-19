@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import logging
 import os
 import time
@@ -11,13 +11,36 @@ logger = logging.getLogger(__name__)
 
 
 class BrowserAgent(BaseAgent):
-    def __init__(self, project_root: str):
+    def __init__(self, project_root: str, memory_system=None):
         super().__init__("browser_agent", project_root)
         self._scraper = PageScraper()
         self._ocr = OCREngine()
         self._playwright_available = False
         self._browser = None
         self._context = None
+        self._memory = memory_system
+
+    def set_memory_system(self, memory_system):
+        """Set or replace the memory system for storing results."""
+        self._memory = memory_system
+
+    def _store_result(self, task_type: str, result_data: Dict, keywords: Optional[List[str]] = None):
+        """Store a result in the memory system if available."""
+        if self._memory is None:
+            return
+        try:
+            from src.core.memory import MemoryType
+            importance = 0.6 if task_type in ("scrape", "ocr") else 0.4
+            self._memory.add_memory(
+                agent_name="browser_agent",
+                memory_type=MemoryType.EPISODIC,
+                content={"task_type": task_type, "result": result_data},
+                keywords=keywords or [task_type, "browser"],
+                importance=importance,
+            )
+            logger.debug("Stored %s result in memory", task_type)
+        except Exception as e:
+            logger.warning("Failed to store result in memory: %s", e)
 
     def execute(self, task: Dict) -> AgentResult:
         task_type = task.get("type", "browse")
@@ -114,6 +137,7 @@ class BrowserAgent(BaseAgent):
             if extract_meta:
                 result["meta"] = self._scraper.extract_meta(html)
 
+            self._store_result("browse", result, keywords=["browse", "webpage", url])
             return AgentResult(success=True, output=result)
         except Exception as e:
             logger.error(f"Playwright browse failed: {e}")
@@ -147,6 +171,7 @@ class BrowserAgent(BaseAgent):
             if extract_meta:
                 result["meta"] = self._scraper.extract_meta(html)
 
+            self._store_result("browse", result, keywords=["browse", "webpage", url])
             return AgentResult(success=True, output=result)
         except Exception as e:
             logger.error(f"Requests browse failed: {e}")
@@ -197,6 +222,7 @@ class BrowserAgent(BaseAgent):
             soup = self._scraper.parse_html(html_content)
             result["data"] = self._scraper.clean_text(soup.get_text()) if self._scraper._beautifulsoup_available else html_content
 
+        self._store_result("scrape", result, keywords=["scrape", "data", url])
         return AgentResult(success=True, output=result)
 
     def _ocr_extract(self, task: Dict) -> AgentResult:
@@ -232,6 +258,8 @@ class BrowserAgent(BaseAgent):
 
         result["source_file"] = file_path
         success = not result.get("error")
+        if success:
+            self._store_result("ocr", result, keywords=["ocr", "text", "extraction"])
         return AgentResult(success=success, output=result, errors=[result["error"]] if result.get("error") else [])
 
     def _screenshot(self, task: Dict) -> AgentResult:

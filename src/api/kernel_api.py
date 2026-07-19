@@ -28,6 +28,7 @@ from src.core.kernel import (
 )
 from src.core.suggestions import SuggestionInbox, SuggestionGenerator
 from src.core.orchestrator import Orchestrator
+from src.agents import create_agent
 
 
 logger = logging.getLogger("kernel_api")
