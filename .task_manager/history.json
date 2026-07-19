@@ -7,5 +7,75 @@
       "description": "Test task",
       "priority": "HIGH"
     }
+  },
+  {
+    "task_id": "8d682425-f4cc-4c2f-ac3f-0e221ea1d5a6",
+    "action": "created",
+    "timestamp": "2026-07-19T04:38:22.246043",
+    "details": {
+      "description": "Fix the bug",
+      "priority": "MEDIUM"
+    }
+  },
+  {
+    "task_id": "8d682425-f4cc-4c2f-ac3f-0e221ea1d5a6",
+    "action": "assigned",
+    "timestamp": "2026-07-19T04:38:22.251709",
+    "details": {
+      "agent": "engineer"
+    }
+  },
+  {
+    "task_id": "8d682425-f4cc-4c2f-ac3f-0e221ea1d5a6",
+    "action": "status_change",
+    "timestamp": "2026-07-19T04:38:22.259933",
+    "details": {
+      "from": "assigned",
+      "to": "running"
+    }
+  },
+  {
+    "task_id": "8d682425-f4cc-4c2f-ac3f-0e221ea1d5a6",
+    "action": "status_change",
+    "timestamp": "2026-07-19T04:38:22.262690",
+    "details": {
+      "from": "running",
+      "to": "completed"
+    }
+  },
+  {
+    "task_id": "8d682425-f4cc-4c2f-ac3f-0e221ea1d5a6",
+    "action": "completed",
+    "timestamp": "2026-07-19T04:38:22.265675",
+    "details": {
+      "result": {
+        "summary": "Executed by engineer"
+      }
+    }
+  },
+  {
+    "task_id": "8d682425-f4cc-4c2f-ac3f-0e221ea1d5a6",
+    "action": "status_change",
+    "timestamp": "2026-07-19T04:38:23.550787",
+    "details": {
+      "from": "completed",
+      "to": "completed"
+    }
+  },
+  {
+    "task_id": "8d682425-f4cc-4c2f-ac3f-0e221ea1d5a6",
+    "action": "completed",
+    "timestamp": "2026-07-19T04:38:23.554685",
+    "details": {
+      "result": {
+        "summary": "Executed by engineer"
+      }
+    }
+  },
+  {
+    "task_id": "8d682425-f4cc-4c2f-ac3f-0e221ea1d5a6",
+    "action": "deleted",
+    "timestamp": "2026-07-19T04:38:24.397442",
+    "details": {}
   }
 ]
