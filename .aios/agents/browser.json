@@ -1,0 +1,23 @@
+{
+  "name": "browser",
+  "mode": "autonomous",
+  "capabilities": [
+    "browser",
+    "browse",
+    "scrape",
+    "web",
+    "ocr",
+    "screenshot",
+    "download",
+    "search",
+    "extract_json"
+  ],
+  "max_concurrent_tasks": 3,
+  "heartbeat_interval_seconds": 30.0,
+  "auto_suggest": true,
+  "domain": "web browsing and scraping",
+  "metadata": {
+    "supports_playwright": true,
+    "supports_ocr": true
+  }
+}

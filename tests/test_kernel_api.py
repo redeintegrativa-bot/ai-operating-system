@@ -675,3 +675,71 @@ class TestEdgeCases:
         assert api.kernel.scheduler.remove_mission(r["id"]) is True
         result = api.list_scheduled_missions()
         assert result["total"] == 0
+
+
+# ===================================================================
+# Browser Agent Endpoints
+# ===================================================================
+
+class TestBrowserAgentEndpoints:
+    def test_get_browser_agent(self, api):
+        result = api.get_browser_agent()
+        assert "name" in result or "error" in result
+
+    def test_get_browser_agent_when_registered(self, api):
+        """Browser agent should be registered by default."""
+        result = api.get_browser_agent()
+        assert result["name"] == "browser"
+        assert result["mode"] == "autonomous"
+
+    def test_execute_browser_task_invalid_type(self, api):
+        result = api.execute_browser_task("invalid_type", {})
+        assert result["success"] is False
+        assert "Invalid task type" in result["error"]
+
+    def test_execute_browser_task_valid_types(self, api):
+        for task_type in ["browse", "scrape", "ocr", "screenshot", "download", "search", "extract_json"]:
+            result = api.execute_browser_task(task_type, {"url": "http://example.com"})
+            assert "success" in result
+
+    def test_schedule_browser_task(self, api):
+        result = api.schedule_browser_task(
+            name="nightly_scrape",
+            task_type="scrape",
+            params={"url": "http://example.com"},
+            interval_seconds=7200,
+        )
+        assert result["success"] is True
+        assert result["task_type"] == "scrape"
+
+    def test_get_browser_memories(self, api):
+        result = api.get_browser_memories()
+        assert "memories" in result
+        assert "total" in result
+
+    def test_get_browser_memories_with_query(self, api):
+        result = api.get_browser_memories(query="scrape")
+        assert "memories" in result
+
+
+class TestBrowserAgentInDashboard:
+    def test_dashboard_includes_browser_agent(self, api):
+        result = api.get_dashboard_data()
+        assert result["agents"]["total"] >= 9
+
+    def test_list_agents_includes_browser(self, api):
+        result = api.list_agents()
+        names = [a["name"] for a in result["agents"]]
+        assert "browser" in names
+
+
+class TestGenerateApiJsonBrowser:
+    def test_browser_endpoint(self, api):
+        result = generate_api_json(api, "browser")
+        data = json.loads(result)
+        assert data["name"] == "browser"
+
+    def test_browser_memories_endpoint(self, api):
+        result = generate_api_json(api, "browser_memories")
+        data = json.loads(result)
+        assert "memories" in data
