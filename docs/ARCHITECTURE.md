@@ -193,6 +193,92 @@ PENDING → ROUTING → ASSIGNED → RUNNING → COMPLETED
 - **Timeout handling**: Tasks have configurable timeouts; exceeded tasks are cancelled and retried
 - **Circuit breaker**: Agents with high failure rates are temporarily taken offline
 
+## Core Engine Modules
+
+### Event System (`src/core/events.py`)
+
+Enables decoupled communication between components via publish/subscribe:
+
+```
+┌──────────────┐   publish()   ┌──────────┐   dispatch   ┌──────────────┐
+│ Publisher     │ ──────────►  │ EventBus │ ──────────►  │ Handler(s)   │
+│ (any module)  │              │          │              │ (subscribers) │
+└──────────────┘              └──────────┘              └──────────────┘
+                                    │
+                              ┌─────▼─────┐
+                              │  History   │  (replay, archival)
+                              └───────────┘
+```
+
+**Event Types:** `TASK_CREATED`, `TASK_ASSIGNED`, `TASK_COMPLETED`, `TASK_FAILED`, `AGENT_STARTED`, `AGENT_STOPPED`, `AGENT_FAILED`, `SYSTEM_STARTUP`, `SYSTEM_SHUTDOWN`, `SYSTEM_ERROR`
+
+**Features:** Thread-safe, wildcard subscriptions, priority ordering, event filtering (by source/type/data), event archival to JSON, event replay, async queue processing.
+
+### Task Manager (`src/core/task_manager.py`)
+
+Manages the full task lifecycle with persistence:
+
+```
+CREATED → PENDING → ASSIGNED → RUNNING → COMPLETED
+                                    │
+                                    ├→ FAILED → (auto-retry) → PENDING
+                                    │
+                                    └→ CANCELLED
+```
+
+**Features:** Priority levels (LOW/MEDIUM/HIGH/CRITICAL), dependency tracking, automatic retry with configurable max, task statistics, history tracking, JSON persistence, export/import.
+
+### Memory System (`src/core/memory.py`)
+
+Provides persistent memory for agents across sessions:
+
+- **Episodic** — Task-specific experiences and outcomes
+- **Semantic** — Knowledge, facts, and learned patterns  
+- **Procedural** — How-to knowledge and workflows
+
+**Features:** Keyword-based search with relevance scoring (keyword match + importance + recency + frequency), memory sharing between agents, consolidation of similar memories, per-agent persistence, shared memory index.
+
+### Monitoring System (`src/core/monitoring.py`)
+
+Provides observability into system health and performance:
+
+- **Structured Logging** — JSON-formatted logs with rotation (10MB files, 5 backups)
+- **Metrics Collection** — CPU, memory, disk usage; task/agent metrics
+- **Health Checks** — CPU load, memory usage, log directory accessibility
+- **Alerting** — Automatic alerts on ERROR/CRITICAL log entries
+- **Report Generation** — Full system report with health status and recent alerts
+
+## API Layer (`src/api/`)
+
+REST API for external system integration (FastAPI):
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/tasks` | POST/GET | Create/list tasks |
+| `/api/tasks/{id}` | GET/PUT/DELETE | Task CRUD |
+| `/api/agents` | GET | List all agents |
+| `/api/agents/{name}` | GET | Agent details |
+| `/api/agents/{name}/execute` | POST | Execute task on agent |
+| `/api/status` | GET | System status |
+| `/api/metrics` | GET | System metrics |
+| `/api/health` | GET | Health check |
+
+**Features:** CORS support, request validation, auto-generated OpenAPI docs, client library (`src/api/client.py`).
+
+## Test Suite (`tests/`)
+
+129 unit tests covering all core modules:
+
+| Module | Tests | Coverage |
+|--------|-------|----------|
+| BaseAgent | 17 | Lifecycle, execution, retry, context, capabilities |
+| TaskManager | 35 | CRUD, lifecycle, persistence, stats, dependencies |
+| Memory | 18 | CRUD, search, sharing, consolidation, persistence |
+| EventBus | 24 | Publishing, subscribing, filtering, archiving, replay |
+| Monitor | 21 | Logging, metrics, health, alerts, reports |
+
+Run with: `python -m pytest tests/ -v`
+
 ## Scaling
 
 - **Horizontal**: Add more agent instances; the message bus distributes work automatically
