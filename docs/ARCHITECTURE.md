@@ -186,14 +186,14 @@ User Request
        │            │  (agent suggestions) │
        │            └─────────────────────┘
        │
-       ├──────────────────┬──────────────────┐
-       ▼                  ▼                  ▼
-┌─────────────┐   ┌─────────────┐   ┌─────────────┐
-│   Agent A    │   │   Agent B    │   │   Agent C    │
-│  (parallel)  │   │  (parallel)  │   │  (parallel)  │
-└──────┬──────┘   └──────┬──────┘   └──────┬──────┘
-       │                  │                  │
-       └──────────────────┼──────────────────┘
+       ├──────────────────┬──────────────────┬──────────────────┐
+       ▼                  ▼                  ▼                  ▼
+┌─────────────┐   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐
+│   Agent A    │   │   Agent B    │   │   Agent C    │   │  Agent D     │
+│  (parallel)  │   │  (parallel)  │   │  (parallel)  │   │  (parallel)  │
+└──────┬──────┘   └──────┬──────┘   └──────┬──────┘   └──────┬──────┘
+       │                  │                  │                  │
+       └──────────────────┼──────────────────┼──────────────────┘
                           ▼
                    ┌─────────────┐
                    │  Aggregator  │  ── Merge results, resolve conflicts
@@ -378,6 +378,7 @@ REST API for external system integration (FastAPI):
 | Monitor | 21 | Logging, metrics, health, alerts, reports |
 | AIOS Kernel | 40 | AgentManager, HeartbeatMonitor, Scheduler, CLI, persistence |
 | Suggestion Inbox | 25 | CRUD, review workflow, filters, stats, persistence |
+| Browser Agent | 20 | Browse, scrape, OCR, screenshot, download, search, extract_json |
 
 Run with: `python -m pytest tests/ -v`
 
