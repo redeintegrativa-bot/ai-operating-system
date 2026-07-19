@@ -1468,6 +1468,12 @@ graph TB
     SYS --> LOG
     SYS --> CFG
 
+    KERN --> REG
+    KERN --> ORC
+    KERN --> SUG
+
+    SUG --> KERN
+
     ORC --> MB
     ORC --> REG
     ORC --> TR
@@ -1514,9 +1520,11 @@ graph TB
           <tbody>
             <tr><td><code>system.py</code></td><td>message_bus, agent_registry, logger, config_manager</td><td>Orchestrator, API Gateway</td></tr>
             <tr><td><code>message_bus.py</code></td><td>config (default.json)</td><td>Todos os agentes, Orchestrator, API Gateway</td></tr>
-            <tr><td><code>agent_registry.py</code></td><td>config (default.json)</td><td>Orchestrator, system.py</td></tr>
-            <tr><td><code>orchestrator.py</code></td><td>message_bus, agent_registry, task_router, logger</td><td>API Gateway</td></tr>
+            <tr><td><code>agent_registry.py</code></td><td>config (default.json)</td><td>Orchestrator, system.py, kernel.py</td></tr>
+            <tr><td><code>orchestrator.py</code></td><td>message_bus, agent_registry, task_router, logger</td><td>API Gateway, kernel.py</td></tr>
             <tr><td><code>task_router.py</code></td><td>message_bus, agent_registry</td><td>orchestrator.py</td></tr>
+            <tr><td><code>kernel.py</code></td><td>agent_registry, orchestrator, suggestions</td><td>system.py, API Gateway</td></tr>
+            <tr><td><code>suggestions.py</code></td><td>kernel.py (Suggestion dataclass)</td><td>kernel.py</td></tr>
             <tr><td><code>api_gateway.py</code></td><td>message_bus, logger</td><td>system.py</td></tr>
             <tr><td><code>logger.py</code></td><td>structlog</td><td>Todos os módulos</td></tr>
             <tr><td><code>config_manager.py</code></td><td>pyyaml, python-dotenv</td><td>system.py</td></tr>
@@ -1745,8 +1753,8 @@ sequenceDiagram
 
       <h3>Status Geral</h3>
       <div class="progress-container">
-        <div class="progress-label"><span>Core Infrastructure</span><span>90%</span></div>
-        <div class="progress-bar"><div class="progress-fill green" style="width:90%"></div></div>
+        <div class="progress-label"><span>Core Infrastructure</span><span>95%</span></div>
+        <div class="progress-bar"><div class="progress-fill green" style="width:95%"></div></div>
       </div>
       <div class="progress-container">
         <div class="progress-label"><span>Agentes</span><span>85%</span></div>
