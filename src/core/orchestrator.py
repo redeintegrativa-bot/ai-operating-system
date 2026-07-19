@@ -175,6 +175,15 @@ DEFAULT_AGENTS: list[dict] = [
         ],
         "fallback": "coder",
     },
+    {
+        "name": "browser",
+        "capabilities": [
+            "browser", "browse", "scrape", "web", "webpage", "html", "ocr",
+            "screenshot", "capture", "download", "search", "extract_json",
+            "parsing", "url", "pdf", "image",
+        ],
+        "fallback": "analyzer",
+    },
 ]
 
 

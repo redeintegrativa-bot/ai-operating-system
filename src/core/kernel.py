@@ -436,6 +436,11 @@ def create_default_kernel(project_root: str) -> AIOSKernel:
         AgentConfig(name="security", mode=AgentMode.ASSISTED,
                    capabilities=["security", "auth", "encryption", "vulnerabilities"],
                    domain="cybersecurity"),
+        AgentConfig(name="browser", mode=AgentMode.AUTONOMOUS,
+                   capabilities=["browser", "browse", "scrape", "web", "ocr",
+                                  "screenshot", "download", "search", "extract_json"],
+                   domain="web browsing and scraping",
+                   metadata={"supports_playwright": True, "supports_ocr": True}),
     ]
 
     for config in default_agents:
