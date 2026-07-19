@@ -7,12 +7,19 @@ from ..base_agent import BaseAgent, AgentResult
 from .page_scraper import PageScraper
 from .ocr_engine import OCREngine
 from .proxy_manager import ProxyManager, ProxyInfo
+from .session_manager import SessionManager
 
 logger = logging.getLogger(__name__)
 
 
 class BrowserAgent(BaseAgent):
-    def __init__(self, project_root: str, memory_system=None, proxy_manager: Optional[ProxyManager] = None):
+    def __init__(
+        self,
+        project_root: str,
+        memory_system=None,
+        proxy_manager: Optional[ProxyManager] = None,
+        session_manager: Optional[SessionManager] = None,
+    ):
         super().__init__("browser_agent", project_root)
         self._scraper = PageScraper()
         self._ocr = OCREngine()
@@ -21,6 +28,9 @@ class BrowserAgent(BaseAgent):
         self._context = None
         self._memory = memory_system
         self._proxy_manager = proxy_manager or ProxyManager()
+        self._session_manager = session_manager or SessionManager(
+            storage_dir=os.path.join(project_root, "sessions"),
+        )
 
     def set_memory_system(self, memory_system):
         """Set or replace the memory system for storing results."""
@@ -33,6 +43,28 @@ class BrowserAgent(BaseAgent):
     def get_proxy_manager(self) -> ProxyManager:
         """Get the current proxy manager."""
         return self._proxy_manager
+
+    def set_session_manager(self, session_manager: SessionManager) -> None:
+        """Set or replace the session manager."""
+        self._session_manager = session_manager
+
+    def get_session_manager(self) -> SessionManager:
+        """Get the current session manager."""
+        return self._session_manager
+
+    def _get_session_name(self, task: Dict) -> Optional[str]:
+        """Extract session name from task parameters."""
+        return task.get("session") or task.get("session_name")
+
+    def _restore_session_cookies(self, task: Dict) -> Optional[List[Dict[str, Any]]]:
+        """Load cookies from a named session for use in requests."""
+        session_name = self._get_session_name(task)
+        if not session_name:
+            return None
+        data = self._session_manager.load_session(session_name)
+        if data:
+            return data.get("cookies")
+        return None
 
     def _store_result(self, task_type: str, result_data: Dict, keywords: Optional[List[str]] = None):
         """Store a result in the memory system if available."""
@@ -154,20 +186,41 @@ class BrowserAgent(BaseAgent):
         proxy = self._get_proxy_from_task(task)
 
         if self._ensure_playwright():
-            return self._browse_with_playwright(url, extract_links, extract_images, extract_meta, proxy)
-        return self._browse_with_requests(url, extract_links, extract_images, extract_meta, proxy)
+            return self._browse_with_playwright(url, extract_links, extract_images, extract_meta, proxy, task=task)
+        return self._browse_with_requests(url, extract_links, extract_images, extract_meta, proxy, task=task)
 
-    def _browse_with_playwright(self, url: str, extract_links: bool, extract_images: bool, extract_meta: bool, proxy: Optional[ProxyInfo] = None) -> AgentResult:
+    def _browse_with_playwright(
+        self,
+        url: str,
+        extract_links: bool,
+        extract_images: bool,
+        extract_meta: bool,
+        proxy: Optional[ProxyInfo] = None,
+        task: Optional[Dict] = None,
+    ) -> AgentResult:
         """Browse using playwright for JS-rendered pages."""
         try:
             proxy_config = self._proxy_manager.get_playwright_proxy(proxy)
-            page = self._browser.new_page()
+            context = self._browser.new_context()
+
+            # Restore session if requested
+            session_name = self._get_session_name(task or {})
+            if session_name:
+                self._session_manager.restore_playwright_state(session_name, context)
+
+            page = context.new_page()
             page.goto(url, wait_until="domcontentloaded", timeout=30000)
             page.wait_for_timeout(2000)
 
             html = page.content()
             title = page.title()
+
+            # Save session after browsing if requested
+            if session_name:
+                self._session_manager.save_playwright_state(session_name, context, url=url)
+
             page.close()
+            context.close()
 
             result: Dict[str, Any] = {
                 "url": url,
@@ -191,7 +244,7 @@ class BrowserAgent(BaseAgent):
             logger.error(f"Playwright browse failed: {e}")
             return AgentResult(success=False, output=None, errors=[str(e)])
 
-    def _browse_with_requests(self, url: str, extract_links: bool, extract_images: bool, extract_meta: bool, proxy: Optional[ProxyInfo] = None) -> AgentResult:
+    def _browse_with_requests(self, url: str, extract_links: bool, extract_images: bool, extract_meta: bool, proxy: Optional[ProxyInfo] = None, task: Optional[Dict] = None) -> AgentResult:
         """Browse using requests as fallback."""
         try:
             import requests
@@ -199,13 +252,29 @@ class BrowserAgent(BaseAgent):
 
             headers = {"User-Agent": "Mozilla/5.0 (compatible; AIOSSrowserAgent/1.0)"}
             proxies = self._proxy_manager.get_request_proxies(proxy)
-            
-            response = requests.get(url, headers=headers, timeout=30, proxies=proxies)
+
+            # Load session cookies if requested
+            session_name = self._get_session_name(task or {})
+            session_cookies = None
+            if session_name:
+                session_cookies = self._restore_session_cookies(task or {})
+
+            response = requests.get(url, headers=headers, timeout=30, proxies=proxies, cookies=session_cookies)
             response.raise_for_status()
             
             if proxy:
                 self._proxy_manager.mark_success(proxy)
             
+            # Save session cookies from response if session requested
+            if session_name and response.cookies:
+                self._session_manager.update_session(
+                    session_name,
+                    cookies=[
+                        {"name": c.name, "value": c.value, "domain": c.domain, "path": c.path}
+                        for c in response.cookies
+                    ],
+                )
+
             html = response.text
 
             soup = BeautifulSoup(html, "html.parser")
@@ -572,6 +641,11 @@ class BrowserAgent(BaseAgent):
 
     def stop(self):
         """Clean up playwright resources."""
+        if self._session_manager:
+            try:
+                self._session_manager.cleanup_expired()
+            except Exception:
+                pass
         if self._browser:
             try:
                 self._browser.close()

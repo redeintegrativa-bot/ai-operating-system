@@ -8,10 +8,12 @@ from .proxy_manager import (
     ProxyProtocol,
     RotationStrategy,
 )
+from .session_manager import SessionManager
 
 __all__ = [
     "ProxyManager",
     "ProxyInfo",
     "ProxyProtocol",
     "RotationStrategy",
+    "SessionManager",
 ]
