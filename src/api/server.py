@@ -525,7 +525,7 @@ def main():
 
     logger.info("Starting AI OS API server on %s:%s", args.host, args.port)
     uvicorn.run(
-        "src.api.server:app",
+        app,
         host=args.host,
         port=args.port,
         reload=args.reload,
