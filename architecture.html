@@ -274,6 +274,8 @@ code {
   </div>
   <nav>
     <a href="#overview" class="active"><span class="nav-icon">◈</span> Visão Geral</a>
+    <a href="#kernel"><span class="nav-icon">◈</span> AIOS Kernel</a>
+    <a href="#suggestions"><span class="nav-icon">💡</span> Suggestion Inbox</a>
     <a href="#modules"><span class="nav-icon">▣</span> Módulos</a>
     <a href="#agents"><span class="nav-icon">◉</span> Agentes</a>
     <div class="nav-divider"></div>
@@ -640,6 +642,8 @@ stateDiagram-v2
             <tr><td><strong>Database Specialist</strong></td><td><code>src/agents/database_specialist/</code></td><td>3</td><td>Otimização de queries, design de schema, migração de dados</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
             <tr><td><strong>Security Specialist</strong></td><td><code>src/agents/security_specialist/</code></td><td>3</td><td>Scanner de vulnerabilidades, security review, compliance</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
             <tr><td><strong>Automation Specialist</strong></td><td><code>src/agents/automation_specialist/</code></td><td>3</td><td>Workflow engine, CI/CD, deployment, scheduling</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>AIOS Kernel</strong></td><td><code>src/core/kernel.py</code></td><td>1</td><td>AgentManager, HeartbeatMonitor, Scheduler para agentes</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Suggestion Inbox</strong></td><td><code>src/core/suggestions.py</code></td><td>1</td><td>Gerenciamento de sugestões de agentes com workflow de aprovação</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
             <tr><td><strong>API Gateway</strong></td><td><code>src/integrations/</code></td><td>1</td><td>Gerenciamento centralizado de API, auth, rate limiting</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
             <tr><td><strong>Utils</strong></td><td><code>src/utils/</code></td><td>2</td><td>Logger centralizado, config manager com env vars</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
             <tr><td><strong>Config</strong></td><td><code>config/</code></td><td>2</td><td>Configurações padrão, settings Python, default.json</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
