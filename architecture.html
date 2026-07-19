@@ -923,6 +923,82 @@ stateDiagram-v2
       </div>
     </section>
 
+    <!-- 7b. Event System -->
+    <section id="events">
+      <h2><span class="sec-icon">⚡</span> Event System</h2>
+      <p>Sistema de comunicação desacoplada entre componentes via publish/subscribe.</p>
+
+      <div class="mermaid">
+graph LR
+    P[Publisher] -->|publish| EB[EventBus]
+    EB -->|dispatch| H1[Handler 1]
+    EB -->|dispatch| H2[Handler 2]
+    EB -->|store| History[History]
+    History -->|replay| EB
+    History -->|archive| File[JSON File]
+      </div>
+
+      <h3>Tipos de Eventos</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Evento</th><th>Descrição</th><th>Source</th></tr></thead>
+          <tbody>
+            <tr><td><code>task.created</code></td><td>Nova tarefa criada</td><td>TaskManager</td></tr>
+            <tr><td><code>task.assigned</code></td><td>Tarefa atribuída a agente</td><td>Orchestrator</td></tr>
+            <tr><td><code>task.completed</code></td><td>Tarefa finalizada com sucesso</td><td>Agent</td></tr>
+            <tr><td><code>task.failed</code></td><td>Tarefa falhou</td><td>Agent</td></tr>
+            <tr><td><code>agent.started</code></td><td>Agente iniciado</td><td>System</td></tr>
+            <tr><td><code>agent.stopped</code></td><td>Agente parado</td><td>System</td></tr>
+            <tr><td><code>system.startup</code></td><td>Sistema iniciando</td><td>System</td></tr>
+            <tr><td><code>system.shutdown</code></td><td>Sistema desligando</td><td>System</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Features</h3>
+      <div class="card-grid">
+        <div class="card"><div class="card-header"><div class="card-icon" style="background:rgba(91,141,239,0.12);color:var(--accent-blue)">🔒</div><div><div class="card-title">Thread-Safe</div></div></div><div class="card-body">Locks RLock para operações concorrentes seguras</div></div>
+        <div class="card"><div class="card-header"><div class="card-icon" style="background:rgba(167,139,250,0.12);color:var(--accent-purple)">🎯</div><div><div class="card-title">Wildcard Subscriptions</div></div></div><div class="card-body">Subscribe com <code>*</code> para receber todos os eventos</div></div>
+        <div class="card"><div class="card-header"><div class="card-icon" style="background:rgba(52,211,153,0.12);color:var(--accent-green)">🔍</div><div><div class="card-title">Event Filtering</div></div></div><div class="card-body">Filtros por source, tipo, e dados customizados</div></div>
+        <div class="card"><div class="card-header"><div class="card-icon" style="background:rgba(251,146,60,0.12);color:var(--accent-orange)">📦</div><div><div class="card-title">Archive & Replay</div></div></div><div class="card-body">Export/import JSON e replay de eventos históricos</div></div>
+      </div>
+    </section>
+
+    <!-- 7c. Monitoring System -->
+    <section id="monitoring">
+      <h2><span class="sec-icon">📊</span> Monitoring System</h2>
+      <p>Sistema de observabilidade com logging, métricas, health checks e alertas.</p>
+
+      <div class="mermaid">
+graph TD
+    M[Monitor] --> L[Structured Logging]
+    M --> MC[Metrics Collection]
+    M --> HC[Health Checks]
+    M --> A[Alerting]
+    L -->|JSON format| LF[Log Files]
+    L -->|rotation| RF[RotatingFileHandler]
+    MC -->|CPU/Memory/Disk| SM[System Metrics]
+    MC -->|Task/Agent| AM[Agent Metrics]
+    HC -->|CPU Load| CS[Health Status]
+    HC -->|Memory| MS[Health Status]
+    A -->|ERROR/CRITICAL| AlertLog[Alert History]
+      </div>
+
+      <h3>Componentes</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Componente</th><th>Descrição</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Structured Logging</strong></td><td>JSON format, 5 níveis, rotation (10MB/5 backups)</td><td><span class="chip green">Completo</span></td></tr>
+            <tr><td><strong>Metrics Collection</strong></td><td>CPU, memory, disk, task/agent metrics</td><td><span class="chip green">Completo</span></td></tr>
+            <tr><td><strong>Health Checks</strong></td><td>CPU load, memory usage, log directory</td><td><span class="chip green">Completo</span></td></tr>
+            <tr><td><strong>Alerting</strong></td><td>Auto-alert em ERROR/CRITICAL logs</td><td><span class="chip green">Completo</span></td></tr>
+            <tr><td><strong>Report Generation</strong></td><td>Full system report com health status</td><td><span class="chip green">Completo</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- 8. Ferramentas -->
     <section id="tools">
       <h2><span class="sec-icon">⚙</span> Ferramentas</h2>
