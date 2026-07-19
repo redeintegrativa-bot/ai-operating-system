@@ -213,6 +213,7 @@ code {
 .agent-card.db { border-left-color: var(--accent-cyan); }
 .agent-card.security { border-left-color: var(--accent-red); }
 .agent-card.automation { border-left-color: var(--accent-yellow); }
+.agent-card.browser { border-left-color: var(--accent-cyan); }
 
 /* Chip / badge */
 .chip {
@@ -362,6 +363,7 @@ graph TB
         DB["DB Specialist<br/><small>Data/SQL</small>"]
         S["Security<br/><small>Auditing</small>"]
         AS["Automation<br/><small>Workflows</small>"]
+        BA["Browser Agent<br/><small>Web/OCR</small>"]
     end
 
     subgraph "Infrastructure"
@@ -388,6 +390,7 @@ graph TB
     MB <--> DB
     MB <--> S
     MB <--> AS
+    MB <--> BA
     PG -.-> DB
     PR -.-> SYS
     GF -.-> PR
@@ -406,6 +409,7 @@ graph TB
     style DB fill:#0f2028,stroke:#22d3ee,color:#e4e4ed
     style S fill:#281212,stroke:#f87171,color:#e4e4ed
     style AS fill:#282208,stroke:#fbbf24,color:#e4e4ed
+    style BA fill:#0f2828,stroke:#06b6d4,color:#e4e4ed
         </div>
       </div>
     </section>
@@ -650,6 +654,7 @@ stateDiagram-v2
             <tr><td><strong>Database Specialist</strong></td><td><code>src/agents/database_specialist/</code></td><td>3</td><td>Otimização de queries, design de schema, migração de dados</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
             <tr><td><strong>Security Specialist</strong></td><td><code>src/agents/security_specialist/</code></td><td>3</td><td>Scanner de vulnerabilidades, security review, compliance</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
             <tr><td><strong>Automation Specialist</strong></td><td><code>src/agents/automation_specialist/</code></td><td>3</td><td>Workflow engine, CI/CD, deployment, scheduling</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Browser Agent</strong></td><td><code>src/agents/browser_agent/</code></td><td>3</td><td>Web browsing, scraping, OCR, screenshot, download, search, extract_json</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
             <tr><td><strong>AIOS Kernel</strong></td><td><code>src/core/kernel.py</code></td><td>1</td><td>AgentManager, HeartbeatMonitor, Scheduler para agentes</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
             <tr><td><strong>Suggestion Inbox</strong></td><td><code>src/core/suggestions.py</code></td><td>1</td><td>Gerenciamento de sugestões de agentes com workflow de aprovação</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
             <tr><td><strong>API Gateway</strong></td><td><code>src/integrations/</code></td><td>1</td><td>Gerenciamento centralizado de API, auth, rate limiting</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
@@ -667,7 +672,7 @@ stateDiagram-v2
     <!-- 3. Agentes e Responsabilidades -->
     <section id="agents">
       <h2><span class="sec-icon">◉</span> Agentes e Responsabilidades</h2>
-      <p>O sistema possui 8 agentes especializados, cada um com um domínio claro de responsabilidade e capacidades específicas registradas no Agent Registry.</p>
+      <p>O sistema possui 9 agentes especializados, cada um com um domínio claro de responsabilidade e capacidades específicas registradas no Agent Registry.</p>
 
       <div class="card-grid">
         <div class="card agent-card orchestrator">
@@ -837,6 +842,34 @@ stateDiagram-v2
             </div>
           </div>
         </div>
+
+        <div class="card agent-card browser">
+          <div class="card-header">
+            <div class="card-icon" style="background:rgba(6,182,212,0.12);color:var(--accent-cyan)">🌐</div>
+            <div><div class="card-title">Browser Agent</div><div class="card-subtitle">Web & OCR Specialist · Prioridade 3</div></div>
+          </div>
+          <div class="card-body">
+            <p><strong>Papel:</strong> Navegação web, scraping e extração de dados</p>
+            <ul>
+              <li> browse — navegação web com Playwright</li>
+              <li> scrape — extração de conteúdo de páginas</li>
+              <li> OCR — reconhecimento óptico de caracteres</li>
+              <li> screenshot — captura de tela de páginas</li>
+              <li> download — download de arquivos da web</li>
+              <li> search — busca e extração de resultados</li>
+              <li> extract_json — extração de dados estruturados</li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip cyan">browse</span>
+              <span class="chip cyan">scrape</span>
+              <span class="chip cyan">ocr</span>
+              <span class="chip cyan">screenshot</span>
+              <span class="chip cyan">download</span>
+              <span class="chip cyan">search</span>
+              <span class="chip cyan">extract_json</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <h3>Diagrama de Workflow dos Agentes</h3>
@@ -857,6 +890,7 @@ graph LR
     TR -->|"Dados"| DB["DB Specialist"]
     TR -->|"Segurança"| S["Security"]
     TR -->|"Automação"| AS["Automation"]
+    TR -->|"Web/OCR"| BA["Browser Agent"]
 
     R -->|"Resultados"| ORC
     A -->|"Design Doc"| ORC
@@ -865,6 +899,7 @@ graph LR
     DB -->|"Schema/Query"| ORC
     S -->|"Audit Report"| ORC
     AS -->|"Pipeline"| ORC
+    BA -->|"Dados Web"| ORC
 
     ORC -->|"Resposta Final"| RESP["User Response"]
 
@@ -1356,6 +1391,11 @@ graph TD
 │   │   │   ├── <span class="file ext-py">__init__.py</span>
 │   │   │   ├── <span class="file ext-py">automation_specialist.py</span>
 │   │   │   └── <span class="file ext-py">workflow_engine.py</span>
+│   │   ├── <span class="dir">browser_agent/</span>
+│   │   │   ├── <span class="file ext-py">__init__.py</span>
+│   │   │   ├── <span class="file ext-py">browser_agent.py</span>
+│   │   │   ├── <span class="file ext-py">page_scraper.py</span>
+│   │   │   └── <span class="file ext-py">ocr_engine.py</span>
 │   │   ├── <span class="dir">database_specialist/</span>
 │   │   │   ├── <span class="file ext-py">__init__.py</span>
 │   │   │   ├── <span class="file ext-py">database_specialist.py</span>
@@ -1454,6 +1494,9 @@ graph TB
         SS["security_scanner.py"]
         AS_SP["automation_specialist.py"]
         WE["workflow_engine.py"]
+        BA_SP["browser_agent.py"]
+        PS["page_scraper.py"]
+        OCR["ocr_engine.py"]
     end
 
     subgraph "Integrations"
@@ -1506,6 +1549,10 @@ graph TB
     AS_SP --> MB
     AS_SP --> WE
 
+    BA_SP --> MB
+    BA_SP --> PS
+    BA_SP --> OCR
+
     AG --> MB
     AG --> LOG
 
@@ -1533,6 +1580,7 @@ graph TB
             <tr><td><code>kernel.py</code></td><td>agent_registry, orchestrator, suggestions</td><td>system.py, API Gateway</td></tr>
             <tr><td><code>suggestions.py</code></td><td>kernel.py (Suggestion dataclass)</td><td>kernel.py</td></tr>
             <tr><td><code>api_gateway.py</code></td><td>message_bus, logger</td><td>system.py</td></tr>
+            <tr><td><code>browser_agent.py</code></td><td>message_bus, page_scraper, ocr_engine, base_agent</td><td>API Gateway, kernel.py</td></tr>
             <tr><td><code>logger.py</code></td><td>structlog</td><td>Todos os módulos</td></tr>
             <tr><td><code>config_manager.py</code></td><td>pyyaml, python-dotenv</td><td>system.py</td></tr>
           </tbody>
@@ -1807,7 +1855,7 @@ sequenceDiagram
             <tr><td><strong>Message Bus</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>Redis Streams com pub/sub e task queue</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:90%"></div></div> 90%</td></tr>
             <tr><td><strong>Agent Registry</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>Tracking de capabilities e health</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:85%"></div></div> 85%</td></tr>
             <tr><td><strong>Orchestrator</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>Decomposição, routing, lifecycle management</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:85%"></div></div> 85%</td></tr>
-            <tr><td><strong>8 Agentes</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>Todos os 8 agentes com módulos auxiliares</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:85%"></div></div> 85%</td></tr>
+            <tr><td><strong>9 Agentes</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>Todos os 9 agentes com módulos auxiliares</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:85%"></div></div> 85%</td></tr>
             <tr><td><strong>Context System</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>Geração, reconstrução, loading e integração</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill" style="width:95%"></div></div> 95%</td></tr>
             <tr><td><strong>API Gateway</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>FastAPI com 13 endpoints REST + client library</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:90%"></div></div> 90%</td></tr>
             <tr><td><strong>Testes</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>129 testes unitários cobrindo todos os core modules</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:90%"></div></div> 90%</td></tr>
@@ -1840,7 +1888,7 @@ sequenceDiagram
           <thead><tr><th>Tarefa</th><th>Status</th><th>Arquivos</th></tr></thead>
           <tbody>
             <tr><td>Core infrastructure (system, message_bus, registry)</td><td><span class="chip green">Completo</span></td><td><code>src/core/*</code></td></tr>
-            <tr><td>8 agentes com módulos auxiliares</td><td><span class="chip green">Completo</span></td><td><code>src/agents/*</code></td></tr>
+            <tr><td>9 agentes com módulos auxiliares</td><td><span class="chip green">Completo</span></td><td><code>src/agents/*</code></td></tr>
             <tr><td>Configuração do sistema</td><td><span class="chip green">Completo</span></td><td><code>config/*</code></td></tr>
             <tr><td>Docker Compose com 5 services</td><td><span class="chip green">Completo</span></td><td><code>docker-compose.yml</code></td></tr>
             <tr><td>Sistema de backup automático</td><td><span class="chip green">Completo</span></td><td><code>scripts/*</code></td></tr>

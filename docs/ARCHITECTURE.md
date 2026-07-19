@@ -142,6 +142,20 @@ class BaseAgent:
 - Automates repetitive workflows
 - Handles deployment orchestration
 
+#### Browser Agent
+
+- Web browsing and navigation with Playwright
+- Page scraping and content extraction
+- OCR (Optical Character Recognition) for image text extraction
+- Screenshot capture of web pages
+- File download from web sources
+- Web search and result extraction
+- JSON data extraction from web content
+
+Helper modules:
+- `page_scraper.py` — HTML parsing and content extraction
+- `ocr_engine.py` — Image-to-text conversion using Tesseract
+
 ## Data Flow
 
 ```
