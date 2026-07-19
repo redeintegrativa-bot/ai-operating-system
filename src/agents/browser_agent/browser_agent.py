@@ -6,12 +6,13 @@ import time
 from ..base_agent import BaseAgent, AgentResult
 from .page_scraper import PageScraper
 from .ocr_engine import OCREngine
+from .proxy_manager import ProxyManager, ProxyInfo
 
 logger = logging.getLogger(__name__)
 
 
 class BrowserAgent(BaseAgent):
-    def __init__(self, project_root: str, memory_system=None):
+    def __init__(self, project_root: str, memory_system=None, proxy_manager: Optional[ProxyManager] = None):
         super().__init__("browser_agent", project_root)
         self._scraper = PageScraper()
         self._ocr = OCREngine()
@@ -19,10 +20,19 @@ class BrowserAgent(BaseAgent):
         self._browser = None
         self._context = None
         self._memory = memory_system
+        self._proxy_manager = proxy_manager or ProxyManager()
 
     def set_memory_system(self, memory_system):
         """Set or replace the memory system for storing results."""
         self._memory = memory_system
+    
+    def set_proxy_manager(self, proxy_manager: ProxyManager) -> None:
+        """Set or replace the proxy manager."""
+        self._proxy_manager = proxy_manager
+    
+    def get_proxy_manager(self) -> ProxyManager:
+        """Get the current proxy manager."""
+        return self._proxy_manager
 
     def _store_result(self, task_type: str, result_data: Dict, keywords: Optional[List[str]] = None):
         """Store a result in the memory system if available."""
