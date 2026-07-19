@@ -92,6 +92,21 @@ class TestBrowserAgentInit:
     def test_ocr_initialized(self, agent):
         assert isinstance(agent._ocr, OCREngine)
 
+    def test_ocr_backend_default(self, agent):
+        assert agent._ocr.get_backend() == "auto"
+
+    def test_ocr_backend_tesseract(self, tmp_project):
+        a = BrowserAgent(project_root=tmp_project, ocr_backend="tesseract")
+        assert a._ocr.get_backend() == "tesseract"
+
+    def test_ocr_backend_easyocr(self, tmp_project):
+        a = BrowserAgent(project_root=tmp_project, ocr_backend="easyocr")
+        assert a._ocr.get_backend() == "easyocr"
+
+    def test_ocr_backend_paddleocr(self, tmp_project):
+        a = BrowserAgent(project_root=tmp_project, ocr_backend="paddleocr")
+        assert a._ocr.get_backend() == "paddleocr"
+
     def test_playwright_not_available_by_default(self, agent):
         assert agent._playwright_available is False
 
@@ -495,6 +510,36 @@ class TestOCRTask:
                 "preprocess": "grayscale",
             })
             assert "source_file" in result.output
+
+    def test_ocr_passes_backend_to_engine(self, agent, tmp_project):
+        img_path = os.path.join(tmp_project, "test.png")
+        with open(img_path, "wb") as f:
+            f.write(b"\x89PNG")
+
+        with patch.object(agent._ocr, "extract_from_image", return_value={
+            "text": "result", "backend": "easyocr"
+        }) as mock_extract:
+            result = agent.execute({
+                "type": "ocr",
+                "file_path": img_path,
+                "backend": "easyocr",
+            })
+            mock_extract.assert_called_once_with(img_path, lang="eng", backend="easyocr")
+
+    def test_ocr_passes_backend_to_pdf_engine(self, agent, tmp_project):
+        pdf_path = os.path.join(tmp_project, "test.pdf")
+        with open(pdf_path, "wb") as f:
+            f.write(b"%PDF-1.4")
+
+        with patch.object(agent._ocr, "extract_from_pdf", return_value={
+            "text": "pdf result", "backend": "paddleocr"
+        }) as mock_extract:
+            result = agent.execute({
+                "type": "ocr",
+                "file_path": pdf_path,
+                "backend": "paddleocr",
+            })
+            mock_extract.assert_called_once_with(pdf_path, lang="eng", backend="paddleocr")
 
 
 # ---------------------------------------------------------------------------
@@ -1181,9 +1226,10 @@ class TestOCREngineExtractImage:
         ocr._pytesseract_available = False
         ocr._easyocr_available = False
         ocr._paddleocr_available = False
-        result = ocr.extract_from_image("/fake/path.png")
-        assert result["text"] == ""
-        assert "No OCR backend available" in result["error"]
+        with patch("os.path.exists", return_value=True):
+            result = ocr.extract_from_image("/fake/path.png")
+            assert result["text"] == ""
+            assert "No OCR backend available" in result["error"]
 
     def test_extract_image_file_not_found(self, ocr):
         ocr._pytesseract_available = True
@@ -1280,6 +1326,8 @@ class TestOCREngineExtractPDF:
     def test_extract_pdf_fallback_no_libraries(self, ocr):
         ocr._pdf_available = False
         ocr._pytesseract_available = False
+        ocr._easyocr_available = False
+        ocr._paddleocr_available = False
         with patch("os.path.exists", return_value=True):
             # Mock only the missing PDF libraries, not subprocess/PIL
             original_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__
@@ -1312,6 +1360,45 @@ class TestOCREngineExtractPDF:
                 assert "full_text" in result
                 assert result["total_pages"] == 1
 
+    def test_extract_pdf_with_easyocr_backend(self, ocr):
+        ocr._pdf_available = True
+        ocr._pytesseract_available = False
+        ocr._easyocr_available = True
+
+        mock_pil_img = MagicMock()
+
+        with patch("os.path.exists", return_value=True):
+            with patch.dict("sys.modules", {"pdf2image": MagicMock()}):
+                mock_pdf2image = sys.modules["pdf2image"]
+                mock_pdf2image.convert_from_path.return_value = [mock_pil_img]
+
+                with patch.object(ocr, "_extract_with_easyocr", return_value={
+                    "text": "easy pdf", "words": [], "word_count": 0, "language": "eng", "backend": "easyocr"
+                }):
+                    result = ocr.extract_from_pdf("/fake/file.pdf", backend="easyocr")
+                    assert "full_text" in result
+                    assert result["backend"] == "easyocr"
+
+    def test_extract_pdf_with_paddleocr_backend(self, ocr):
+        ocr._pdf_available = True
+        ocr._pytesseract_available = False
+        ocr._easyocr_available = False
+        ocr._paddleocr_available = True
+
+        mock_pil_img = MagicMock()
+
+        with patch("os.path.exists", return_value=True):
+            with patch.dict("sys.modules", {"pdf2image": MagicMock()}):
+                mock_pdf2image = sys.modules["pdf2image"]
+                mock_pdf2image.convert_from_path.return_value = [mock_pil_img]
+
+                with patch.object(ocr, "_extract_with_paddleocr", return_value={
+                    "text": "paddle pdf", "words": [], "word_count": 0, "language": "eng", "backend": "paddleocr"
+                }):
+                    result = ocr.extract_from_pdf("/fake/file.pdf", backend="paddleocr")
+                    assert "full_text" in result
+                    assert result["backend"] == "paddleocr"
+
 
 class TestOCREnginePreprocessImage:
     def test_preprocess_image_file_not_found(self, ocr):
@@ -1323,6 +1410,73 @@ class TestOCREnginePreprocessImage:
             with patch("builtins.__import__", side_effect=ImportError("No PIL")):
                 with pytest.raises(Exception):
                     ocr.preprocess_image("/fake/img.png", "/tmp/out.png")
+
+
+class TestOCREngineBackendHelpers:
+    def test_map_lang_to_paddle_eng(self):
+        assert OCREngine._map_lang_to_paddle("eng") == "en"
+
+    def test_map_lang_to_paddle_ita(self):
+        assert OCREngine._map_lang_to_paddle("ita") == "it"
+
+    def test_map_lang_to_paddle_jpn(self):
+        assert OCREngine._map_lang_to_paddle("jpn") == "japan"
+
+    def test_map_lang_to_paddle_chi_sim(self):
+        assert OCREngine._map_lang_to_paddle("chi_sim") == "ch"
+
+    def test_map_lang_to_paddle_unknown_defaults_en(self):
+        assert OCREngine._map_lang_to_paddle("xyz_unknown") == "en"
+
+    def test_map_lang_to_paddle_comma_separated(self):
+        assert OCREngine._map_lang_to_paddle("eng,ita") == "en"
+
+    def test_extract_easyocr_import_error(self, ocr):
+        ocr._easyocr_available = True
+        ocr._pytesseract_available = False
+        mock_reader = MagicMock()
+        mock_reader.readtext.side_effect = Exception("EasyOCR init failed")
+
+        with patch("os.path.exists", return_value=True):
+            with patch.object(ocr, "_get_easyocr_reader", side_effect=Exception("init failed")):
+                result = ocr._extract_with_easyocr("/fake/img.png", "eng")
+                assert result["text"] == ""
+                assert result["backend"] == "easyocr"
+
+    def test_extract_paddleocr_import_error(self, ocr):
+        with patch("os.path.exists", return_value=True):
+            with patch.object(ocr, "_get_paddleocr_engine", side_effect=Exception("PaddleOCR init failed")):
+                result = ocr._extract_with_paddleocr("/fake/img.png", "eng")
+                assert result["text"] == ""
+                assert result["backend"] == "paddleocr"
+
+    def test_extract_easyocr_success(self, ocr):
+        mock_reader = MagicMock()
+        mock_reader.readtext.return_value = [
+            ([[0, 0], [100, 0], [100, 20], [0, 20]], "Hello", 0.95),
+            ([[0, 25], [100, 25], [100, 45], [0, 45]], "World", 0.90),
+        ]
+        with patch.object(ocr, "_get_easyocr_reader", return_value=mock_reader):
+            result = ocr._extract_with_easyocr("/fake/img.png", "eng")
+            assert result["text"] == "Hello World"
+            assert result["word_count"] == 2
+            assert result["backend"] == "easyocr"
+            assert result["words"][0]["confidence"] == 95.0
+
+    def test_extract_paddleocr_success(self, ocr):
+        mock_engine = MagicMock()
+        mock_engine.ocr.return_value = [
+            [
+                ([[0, 0], [100, 0], [100, 20], [0, 20]], ("Paddle", 0.88)),
+                ([[0, 25], [100, 25], [100, 45], [0, 45]], ("OCR", 0.92)),
+            ]
+        ]
+        with patch.object(ocr, "_get_paddleocr_engine", return_value=mock_engine):
+            result = ocr._extract_with_paddleocr("/fake/img.png", "eng")
+            assert result["text"] == "Paddle OCR"
+            assert result["word_count"] == 2
+            assert result["backend"] == "paddleocr"
+            assert result["words"][0]["confidence"] == 88.0
 
 
 # ---------------------------------------------------------------------------
