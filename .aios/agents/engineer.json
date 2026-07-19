@@ -1,6 +1,6 @@
 {
   "name": "engineer",
-  "mode": "manual",
+  "mode": "autonomous",
   "capabilities": [
     "coding",
     "implementation",
