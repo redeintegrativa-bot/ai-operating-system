@@ -123,11 +123,12 @@ class TestEventBusFiltering:
 
     def test_event_filter_by_type_set(self, bus):
         received = []
-        f = EventFilter(event_types={EventType.TASK_COMPLETED, EventType.TASK_FAILED})
-        bus.subscribe(EventType.TASK_CREATED.value, lambda e: received.append(e), event_filter=f)
-        bus.create_and_publish(EventType.TASK_CREATED, "test", {})  # filtered out by type set
-        bus.create_and_publish(EventType.TASK_COMPLETED, "test", {})  # matches
-        assert len(received) == 1
+        f = EventFilter(event_types={EventType.TASK_CREATED, EventType.TASK_FAILED})
+        bus.subscribe("*", lambda e: received.append(e), event_filter=f)
+        bus.create_and_publish(EventType.TASK_CREATED, "test", {})   # matches filter
+        bus.create_and_publish(EventType.AGENT_STARTED, "test", {})  # filtered out
+        bus.create_and_publish(EventType.TASK_FAILED, "test", {})    # matches filter
+        assert len(received) == 2
 
     def test_event_filter_by_data(self, bus):
         received = []
