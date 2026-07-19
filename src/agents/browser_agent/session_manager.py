@@ -113,6 +113,7 @@ class SessionManager:
             if self._is_expired(session):
                 logger.info("Cached session expired: %s", name)
                 self._sessions.pop(name, None)
+                self.delete_session(name)
                 return None
             return session
 

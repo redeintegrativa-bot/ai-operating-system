@@ -201,26 +201,29 @@ class BrowserAgent(BaseAgent):
         """Browse using playwright for JS-rendered pages."""
         try:
             proxy_config = self._proxy_manager.get_playwright_proxy(proxy)
-            context = self._browser.new_context()
-
-            # Restore session if requested
             session_name = self._get_session_name(task or {})
-            if session_name:
-                self._session_manager.restore_playwright_state(session_name, context)
+            use_context = session_name is not None
 
-            page = context.new_page()
+            if use_context:
+                context = self._browser.new_context()
+                if session_name:
+                    self._session_manager.restore_playwright_state(session_name, context)
+                page = context.new_page()
+            else:
+                page = self._browser.new_page()
+
             page.goto(url, wait_until="domcontentloaded", timeout=30000)
             page.wait_for_timeout(2000)
 
             html = page.content()
             title = page.title()
 
-            # Save session after browsing if requested
-            if session_name:
+            if use_context and session_name:
                 self._session_manager.save_playwright_state(session_name, context, url=url)
 
             page.close()
-            context.close()
+            if use_context:
+                context.close()
 
             result: Dict[str, Any] = {
                 "url": url,
