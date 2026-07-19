@@ -19,10 +19,11 @@ class BrowserAgent(BaseAgent):
         memory_system=None,
         proxy_manager: Optional[ProxyManager] = None,
         session_manager: Optional[SessionManager] = None,
+        ocr_backend: str = "auto",
     ):
         super().__init__("browser_agent", project_root)
         self._scraper = PageScraper()
-        self._ocr = OCREngine()
+        self._ocr = OCREngine(backend=ocr_backend)
         self._playwright_available = False
         self._browser = None
         self._context = None
