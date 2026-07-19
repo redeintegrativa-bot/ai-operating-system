@@ -331,6 +331,7 @@ class BrowserAgent(BaseAgent):
         url = task.get("url", "")
         output_dir = task.get("output_dir", os.path.join(self.project_root, "downloads"))
         filename = task.get("filename", "")
+        proxy = self._get_proxy_from_task(task)
 
         if not url:
             return AgentResult(success=False, output=None, errors=["No URL provided"])
@@ -346,8 +347,12 @@ class BrowserAgent(BaseAgent):
 
             output_path = os.path.join(output_dir, filename)
             headers = {"User-Agent": "Mozilla/5.0 (compatible; AIOSSrowserAgent/1.0)"}
-            response = requests.get(url, headers=headers, timeout=60, stream=True)
+            proxies = self._proxy_manager.get_request_proxies(proxy)
+            response = requests.get(url, headers=headers, timeout=60, stream=True, proxies=proxies)
             response.raise_for_status()
+            
+            if proxy:
+                self._proxy_manager.mark_success(proxy)
 
             with open(output_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
@@ -363,24 +368,32 @@ class BrowserAgent(BaseAgent):
             self._store_result("download", output, keywords=["download", "file", url])
             return AgentResult(success=True, output=output)
         except Exception as e:
+            if proxy:
+                self._proxy_manager.mark_failed(proxy)
             logger.error(f"Download failed: {e}")
             return AgentResult(success=False, output=None, errors=[str(e)])
 
-    def _download_file(self, url: str) -> str:
+    def _download_file(self, url: str, proxy: Optional[ProxyInfo] = None) -> str:
         """Download a file to a temp location and return the path."""
         try:
             import requests
             import tempfile
 
             headers = {"User-Agent": "Mozilla/5.0 (compatible; AIOSSrowserAgent/1.0)"}
-            response = requests.get(url, headers=headers, timeout=30)
+            proxies = self._proxy_manager.get_request_proxies(proxy)
+            response = requests.get(url, headers=headers, timeout=30, proxies=proxies)
             response.raise_for_status()
+            
+            if proxy:
+                self._proxy_manager.mark_success(proxy)
 
             suffix = ".pdf" if "pdf" in response.headers.get("content-type", "") else ".png"
             with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as f:
                 f.write(response.content)
                 return f.name
         except Exception as e:
+            if proxy:
+                self._proxy_manager.mark_failed(proxy)
             logger.error(f"File download failed: {e}")
             return ""
 
@@ -429,7 +442,7 @@ class BrowserAgent(BaseAgent):
             logger.error(f"Playwright search failed: {e}")
             return AgentResult(success=False, output=None, errors=[str(e)])
 
-    def _search_requests(self, query: str, num_results: int) -> AgentResult:
+    def _search_requests(self, query: str, num_results: int, proxy: Optional[ProxyInfo] = None) -> AgentResult:
         """Search using requests as fallback (limited)."""
         try:
             import requests
@@ -438,8 +451,12 @@ class BrowserAgent(BaseAgent):
 
             search_url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
             headers = {"User-Agent": "Mozilla/5.0 (compatible; AIOSSrowserAgent/1.0)"}
-            response = requests.get(search_url, headers=headers, timeout=15)
+            proxies = self._proxy_manager.get_request_proxies(proxy)
+            response = requests.get(search_url, headers=headers, timeout=15, proxies=proxies)
             response.raise_for_status()
+            
+            if proxy:
+                self._proxy_manager.mark_success(proxy)
 
             soup = BeautifulSoup(response.text, "html.parser")
             results = []
@@ -457,6 +474,8 @@ class BrowserAgent(BaseAgent):
             self._store_result("search", output, keywords=["search", query])
             return AgentResult(success=True, output=output)
         except Exception as e:
+            if proxy:
+                self._proxy_manager.mark_failed(proxy)
             logger.error(f"Search failed: {e}")
             return AgentResult(success=False, output=None, errors=[str(e)])
 
