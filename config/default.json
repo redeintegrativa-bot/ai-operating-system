@@ -1,0 +1,125 @@
+{
+  "system": {
+    "name": "AI Operating System",
+    "version": "0.1.0",
+    "env": "development",
+    "debug": false,
+    "log_level": "INFO"
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8080,
+    "cors_origins": ["http://localhost:3000"],
+    "rate_limit": {
+      "window_ms": 60000,
+      "max_requests": 100
+    }
+  },
+  "agents": {
+    "max_concurrent_tasks": 10,
+    "default_timeout_seconds": 300,
+    "retry_count": 3,
+    "heartbeat_interval_seconds": 15,
+    "registry": {
+      "cleanup_interval_seconds": 60,
+      "stale_threshold_seconds": 120
+    }
+  },
+  "orchestrator": {
+    "task_decomposition": true,
+    "parallel_execution": true,
+    "max_parallel_agents": 4,
+    "priority_levels": ["critical", "high", "medium", "low"],
+    "default_priority": "medium",
+    "routing_strategy": "capability_based"
+  },
+  "message_bus": {
+    "backend": "redis",
+    "max_queue_size": 1000,
+    "message_ttl_seconds": 3600,
+    "retry_delivery_count": 3,
+    "dead_letter_queue": true
+  },
+  "llm": {
+    "default_provider": "openai",
+    "default_model": "gpt-4",
+    "fallback_model": "gpt-3.5-turbo",
+    "embedding_model": "text-embedding-3-small",
+    "temperature": 0.7,
+    "max_tokens": 4096,
+    "request_timeout_seconds": 120,
+    "providers": {
+      "openai": {
+        "base_url": "https://api.openai.com/v1",
+        "organization": null
+      },
+      "anthropic": {
+        "base_url": "https://api.anthropic.com"
+      }
+    }
+  },
+  "database": {
+    "url": "sqlite:///data/aios.db",
+    "echo": false,
+    "pool_size": 5,
+    "max_overflow": 10
+  },
+  "redis": {
+    "url": "redis://localhost:6379",
+    "max_connections": 20,
+    "socket_timeout_seconds": 5
+  },
+  "security": {
+    "enable_auth": false,
+    "api_key_header": "X-API-Key",
+    "jwt_secret": null,
+    "jwt_expiration_hours": 24
+  },
+  "monitoring": {
+    "enabled": true,
+    "metrics_port": 9090,
+    "health_check_interval_seconds": 30
+  },
+  "agents_config": {
+    "orchestrator": {
+      "enabled": true,
+      "priority": 1,
+      "capabilities": ["task_decomposition", "routing", "lifecycle_management"]
+    },
+    "researcher": {
+      "enabled": true,
+      "priority": 2,
+      "capabilities": ["web_search", "knowledge_retrieval", "summarization"]
+    },
+    "architect": {
+      "enabled": true,
+      "priority": 2,
+      "capabilities": ["system_design", "architecture_review", "pattern_selection"]
+    },
+    "engineer": {
+      "enabled": true,
+      "priority": 3,
+      "capabilities": ["code_generation", "refactoring", "testing", "debugging"]
+    },
+    "ai_specialist": {
+      "enabled": true,
+      "priority": 3,
+      "capabilities": ["model_management", "training", "inference", "evaluation"]
+    },
+    "database_specialist": {
+      "enabled": true,
+      "priority": 3,
+      "capabilities": ["query_optimization", "schema_design", "data_migration"]
+    },
+    "security_specialist": {
+      "enabled": true,
+      "priority": 2,
+      "capabilities": ["vulnerability_scanning", "security_review", "compliance_check"]
+    },
+    "automation_specialist": {
+      "enabled": true,
+      "priority": 3,
+      "capabilities": ["workflow_automation", "ci_cd", "deployment", "scheduling"]
+    }
+  }
+}

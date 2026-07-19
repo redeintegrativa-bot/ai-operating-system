@@ -72,6 +72,8 @@ Thumbs.db
 
 # Logs
 *.log
+logs/
+*.pid
 
 # OS
 .DS_Store

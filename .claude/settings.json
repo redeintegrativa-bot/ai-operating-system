@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "project": "ai-operating-system",
+  "agents": [
+    "orchestrator",
+    "architect",
+    "engineer",
+    "researcher",
+    "ai_specialist",
+    "automation_specialist",
+    "database_specialist",
+    "security_specialist"
+  ]
+}

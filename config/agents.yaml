@@ -1,0 +1,3 @@
+# Agent Configuration
+# Defines agent capabilities, priorities, and settings
+# Used by orchestrator for task routing
