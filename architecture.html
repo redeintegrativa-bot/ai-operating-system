@@ -350,6 +350,8 @@ graph TB
         ORC["Orchestrator<br/><small>Decompose · Route · Schedule</small>"]
         MB["Message Bus<br/><small>Redis Streams · Pub/Sub</small>"]
         REG["Agent Registry<br/><small>Capabilities · Health · Status</small>"]
+        KERN["AIOS Kernel<br/><small>AgentManager · Heartbeat · Scheduler</small>"]
+        SUG["Suggestion Inbox<br/><small>Agent Suggestions · Review</small>"]
     end
 
     subgraph "Agents"
@@ -373,7 +375,11 @@ graph TB
     AG --> ORC
     ORC <--> MB
     ORC <--> REG
+    KERN <--> REG
+    KERN <--> ORC
+    KERN --> SUG
     SYS <--> REG
+    SYS <--> KERN
     MB <--> RD
     MB <--> R
     MB <--> A
@@ -391,6 +397,8 @@ graph TB
     style REG fill:#1a2744,stroke:#34d399,color:#e4e4ed
     style SYS fill:#1a2744,stroke:#fb923c,color:#e4e4ed
     style AG fill:#1a2744,stroke:#22d3ee,color:#e4e4ed
+    style KERN fill:#1a2744,stroke:#fbbf24,color:#e4e4ed
+    style SUG fill:#282208,stroke:#fbbf24,color:#e4e4ed
     style R fill:#122a1f,stroke:#34d399,color:#e4e4ed
     style A fill:#1e1a2e,stroke:#a78bfa,color:#e4e4ed
     style E fill:#2a1c12,stroke:#fb923c,color:#e4e4ed
@@ -1415,6 +1423,8 @@ graph TB
         SYS["system.py"]
         MB["message_bus.py"]
         REG["agent_registry.py"]
+        KERN["kernel.py"]
+        SUG["suggestions.py"]
     end
 
     subgraph "Orchestrator"
