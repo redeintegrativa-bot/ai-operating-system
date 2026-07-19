@@ -117,14 +117,8 @@ class ProxyManager:
             if url.startswith("socks5h://"):
                 url = "socks5://" + url[9:]
             
-            parsed = urlparse(url)
-            
-            if not parsed.hostname or not parsed.port:
-                logger.warning(f"Invalid proxy URL: {proxy_url}")
-                return None
-            
-            # Determine protocol
-            scheme = parsed.scheme.lower()
+            # Determine protocol first
+            scheme = url.split("://")[0].lower() if "://" in url else ""
             if scheme in ("http", "https"):
                 protocol = ProxyProtocol.HTTP
             elif scheme == "socks4":
@@ -133,6 +127,13 @@ class ProxyManager:
                 protocol = ProxyProtocol.SOCKS5
             else:
                 logger.warning(f"Unsupported protocol: {scheme}")
+                return None
+            
+            # Parse with http:// to extract host/port/auth
+            parsed = urlparse("http://" + url.split("://")[1])
+            
+            if not parsed.hostname or not parsed.port:
+                logger.warning(f"Invalid proxy URL: {proxy_url}")
                 return None
             
             return ProxyInfo(
