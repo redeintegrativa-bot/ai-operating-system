@@ -367,6 +367,7 @@ class BrowserAgent(BaseAgent):
         url = task.get("url", "")
         lang = task.get("lang", "eng")
         preprocess = task.get("preprocess", None)
+        backend = task.get("backend", None)
         proxy = self._get_proxy_from_task(task)
 
         if not file_path and not url:
@@ -389,9 +390,9 @@ class BrowserAgent(BaseAgent):
                 logger.warning(f"Preprocessing failed, using original: {e}")
 
         if file_path.lower().endswith(".pdf"):
-            result = self._ocr.extract_from_pdf(file_path, lang=lang)
+            result = self._ocr.extract_from_pdf(file_path, lang=lang, backend=backend)
         else:
-            result = self._ocr.extract_from_image(file_path, lang=lang)
+            result = self._ocr.extract_from_image(file_path, lang=lang, backend=backend)
 
         result["source_file"] = file_path
         success = not result.get("error")

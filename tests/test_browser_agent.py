@@ -1107,6 +1107,73 @@ class TestOCREngineInit:
         assert isinstance(avail, dict)
         assert "pytesseract" in avail
         assert "pdf2image" in avail
+        assert "easyocr" in avail
+        assert "paddleocr" in avail
+
+    def test_default_backend_is_auto(self, ocr):
+        assert ocr.get_backend() == "auto"
+
+    def test_backend_tesseract(self):
+        engine = OCREngine(backend="tesseract")
+        assert engine.get_backend() == "tesseract"
+
+    def test_backend_easyocr(self):
+        engine = OCREngine(backend="easyocr")
+        assert engine.get_backend() == "easyocr"
+
+    def test_backend_paddleocr(self):
+        engine = OCREngine(backend="paddleocr")
+        assert engine.get_backend() == "paddleocr"
+
+    def test_invalid_backend_falls_back_to_auto(self):
+        engine = OCREngine(backend="invalid_backend")
+        assert engine.get_backend() == "auto"
+
+    def test_resolve_backend_specific_available(self, ocr):
+        ocr._pytesseract_available = True
+        resolved = ocr._resolve_backend("tesseract")
+        assert resolved.value == "tesseract"
+
+    def test_resolve_backend_specific_unavailable(self, ocr):
+        ocr._pytesseract_available = False
+        ocr._easyocr_available = True
+        resolved = ocr._resolve_backend("tesseract")
+        assert resolved.value == "easyocr"
+
+    def test_resolve_backend_auto_tesseract_preferred(self, ocr):
+        ocr._pytesseract_available = True
+        ocr._easyocr_available = True
+        ocr._paddleocr_available = True
+        resolved = ocr._resolve_backend("auto")
+        assert resolved.value == "tesseract"
+
+    def test_resolve_backend_auto_fallback_to_easyocr(self, ocr):
+        ocr._pytesseract_available = False
+        ocr._easyocr_available = True
+        ocr._paddleocr_available = True
+        resolved = ocr._resolve_backend("auto")
+        assert resolved.value == "easyocr"
+
+    def test_resolve_backend_auto_fallback_to_paddleocr(self, ocr):
+        ocr._pytesseract_available = False
+        ocr._easyocr_available = False
+        ocr._paddleocr_available = True
+        resolved = ocr._resolve_backend("auto")
+        assert resolved.value == "paddleocr"
+
+    def test_resolve_backend_auto_none_available(self, ocr):
+        ocr._pytesseract_available = False
+        ocr._easyocr_available = False
+        ocr._paddleocr_available = False
+        resolved = ocr._resolve_backend("auto")
+        assert resolved.value == "auto"
+
+    def test_get_backend_chain(self, ocr):
+        from src.agents.browser_agent.ocr_engine import OCRBackend
+        chain = ocr._get_backend_chain(OCRBackend.EASYOCR)
+        assert chain[0] == OCRBackend.EASYOCR
+        assert OCRBackend.EASYOCR in chain
+        assert len(chain) == 3
 
 
 class TestOCREngineExtractImage:
