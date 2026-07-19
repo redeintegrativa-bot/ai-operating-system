@@ -1,7 +1,7 @@
 /**
  * AIOS Mission Control - State Management Store
  * LocalStorage persistence with subscription-based reactivity.
- * Prepared for future database synchronization.
+ * Fetches real data from Kernel API when backend is available.
  */
 const Store = {
   /** @type {Object} Application state */
@@ -12,9 +12,35 @@ const Store = {
     memories: [],
     workspaces: [],
     tools: [],
+    suggestions: [],
+    dashboard: null,
     currentPage: 'dashboard',
     sidebarCollapsed: false,
     notifications: []
+  },
+
+  /** @type {Object} Loading flags keyed by data type */
+  loading: {
+    agents: false,
+    missions: false,
+    tasks: false,
+    memories: false,
+    workspaces: false,
+    tools: false,
+    suggestions: false,
+    dashboard: false,
+  },
+
+  /** @type {Object|null} Error objects keyed by data type */
+  errors: {
+    agents: null,
+    missions: null,
+    tasks: null,
+    memories: null,
+    workspaces: null,
+    tools: null,
+    suggestions: null,
+    dashboard: null,
   },
 
   /** @type {Object} Subscriber callbacks keyed by state property */
@@ -24,7 +50,8 @@ const Store = {
   _storageKey: 'aios_mission_control_state',
 
   /**
-   * Initialize store with mock data or load from localStorage.
+   * Initialize store with mock data or load from localStorage,
+   * then attempt to fetch real data from the Kernel API.
    */
   init() {
     const saved = this.load();
@@ -33,6 +60,7 @@ const Store = {
     } else {
       this._loadMockData();
     }
+    this.fetchAll();
   },
 
   /**
