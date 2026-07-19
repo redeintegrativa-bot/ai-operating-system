@@ -1177,11 +1177,13 @@ class TestOCREngineInit:
 
 
 class TestOCREngineExtractImage:
-    def test_extract_image_no_pytesseract(self, ocr):
+    def test_extract_image_no_backends(self, ocr):
         ocr._pytesseract_available = False
+        ocr._easyocr_available = False
+        ocr._paddleocr_available = False
         result = ocr.extract_from_image("/fake/path.png")
         assert result["text"] == ""
-        assert "pytesseract not installed" in result["error"]
+        assert "No OCR backend available" in result["error"]
 
     def test_extract_image_file_not_found(self, ocr):
         ocr._pytesseract_available = True
@@ -1195,6 +1197,78 @@ class TestOCREngineExtractImage:
             with patch("os.path.exists", return_value=True):
                 result = ocr.extract_from_image("/fake/img.png")
                 assert result["text"] == ""
+
+    def test_extract_image_fallback_tesseract_to_easyocr(self, ocr):
+        ocr._pytesseract_available = True
+        ocr._easyocr_available = True
+        ocr._paddleocr_available = False
+
+        def fake_tesseract(image_path, lang):
+            return {"text": "", "error": "tesseract failed", "backend": "tesseract"}
+
+        def fake_easyocr(image_path, lang):
+            return {"text": "easyocr result", "words": [], "word_count": 0, "language": lang, "backend": "easyocr"}
+
+        with patch.object(ocr, "_extract_with_tesseract", side_effect=fake_tesseract):
+            with patch.object(ocr, "_extract_with_easyocr", side_effect=fake_easyocr):
+                with patch("os.path.exists", return_value=True):
+                    result = ocr.extract_from_image("/fake/img.png")
+                    assert result["text"] == "easyocr result"
+                    assert result["backend"] == "easyocr"
+
+    def test_extract_image_with_tesseract_success(self, ocr):
+        ocr._pytesseract_available = True
+        ocr._easyocr_available = False
+        ocr._paddleocr_available = False
+
+        with patch.object(ocr, "_extract_with_tesseract", return_value={
+            "text": "hello", "words": [{"text": "hello", "confidence": 90, "bbox": {"x": 0, "y": 0, "w": 10, "h": 10}}],
+            "word_count": 1, "language": "eng", "backend": "tesseract"
+        }):
+            with patch("os.path.exists", return_value=True):
+                result = ocr.extract_from_image("/fake/img.png")
+                assert result["text"] == "hello"
+                assert result["backend"] == "tesseract"
+
+    def test_extract_image_with_easyocr_success(self, ocr):
+        ocr._pytesseract_available = False
+        ocr._easyocr_available = True
+        ocr._paddleocr_available = False
+
+        with patch.object(ocr, "_extract_with_easyocr", return_value={
+            "text": "easy text", "words": [{"text": "easy", "confidence": 85, "bbox": {"x": 0, "y": 0, "w": 20, "h": 10}}],
+            "word_count": 1, "language": "eng", "backend": "easyocr"
+        }):
+            with patch("os.path.exists", return_value=True):
+                result = ocr.extract_from_image("/fake/img.png", backend="easyocr")
+                assert result["text"] == "easy text"
+                assert result["backend"] == "easyocr"
+
+    def test_extract_image_with_paddleocr_success(self, ocr):
+        ocr._pytesseract_available = False
+        ocr._easyocr_available = False
+        ocr._paddleocr_available = True
+
+        with patch.object(ocr, "_extract_with_paddleocr", return_value={
+            "text": "paddle text", "words": [{"text": "paddle", "confidence": 88, "bbox": {"x": 0, "y": 0, "w": 15, "h": 10}}],
+            "word_count": 1, "language": "eng", "backend": "paddleocr"
+        }):
+            with patch("os.path.exists", return_value=True):
+                result = ocr.extract_from_image("/fake/img.png", backend="paddleocr")
+                assert result["text"] == "paddle text"
+                assert result["backend"] == "paddleocr"
+
+    def test_extract_image_backend_override(self, ocr):
+        ocr._pytesseract_available = True
+        ocr._easyocr_available = True
+
+        with patch.object(ocr, "_extract_with_easyocr", return_value={
+            "text": "overridden", "words": [], "word_count": 0, "language": "eng", "backend": "easyocr"
+        }):
+            with patch("os.path.exists", return_value=True):
+                result = ocr.extract_from_image("/fake/img.png", backend="easyocr")
+                assert result["text"] == "overridden"
+                assert result["backend"] == "easyocr"
 
 
 class TestOCREngineExtractPDF:
