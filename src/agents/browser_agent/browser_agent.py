@@ -153,15 +153,21 @@ class BrowserAgent(BaseAgent):
             logger.error(f"Playwright browse failed: {e}")
             return AgentResult(success=False, output=None, errors=[str(e)])
 
-    def _browse_with_requests(self, url: str, extract_links: bool, extract_images: bool, extract_meta: bool) -> AgentResult:
+    def _browse_with_requests(self, url: str, extract_links: bool, extract_images: bool, extract_meta: bool, proxy: Optional[ProxyInfo] = None) -> AgentResult:
         """Browse using requests as fallback."""
         try:
             import requests
             from bs4 import BeautifulSoup
 
             headers = {"User-Agent": "Mozilla/5.0 (compatible; AIOSSrowserAgent/1.0)"}
-            response = requests.get(url, headers=headers, timeout=30)
+            proxies = self._proxy_manager.get_request_proxies(proxy)
+            
+            response = requests.get(url, headers=headers, timeout=30, proxies=proxies)
             response.raise_for_status()
+            
+            if proxy:
+                self._proxy_manager.mark_success(proxy)
+            
             html = response.text
 
             soup = BeautifulSoup(html, "html.parser")
@@ -184,6 +190,8 @@ class BrowserAgent(BaseAgent):
             self._store_result("browse", result, keywords=["browse", "webpage", url])
             return AgentResult(success=True, output=result)
         except Exception as e:
+            if proxy:
+                self._proxy_manager.mark_failed(proxy)
             logger.error(f"Requests browse failed: {e}")
             return AgentResult(success=False, output=None, errors=[str(e)])
 
@@ -194,6 +202,7 @@ class BrowserAgent(BaseAgent):
         selector = task.get("selector", "")
         selector_type = task.get("selector_type", "css")
         extract_type = task.get("extract", "text")
+        proxy = self._get_proxy_from_task(task)
 
         if not html_content and not url:
             return AgentResult(success=False, output=None, errors=["No URL or HTML content provided"])
@@ -201,6 +210,7 @@ class BrowserAgent(BaseAgent):
         if not html_content:
             if self._ensure_playwright():
                 try:
+                    proxy_config = self._proxy_manager.get_playwright_proxy(proxy)
                     page = self._browser.new_page()
                     page.goto(url, wait_until="domcontentloaded", timeout=30000)
                     page.wait_for_timeout(2000)
@@ -212,10 +222,15 @@ class BrowserAgent(BaseAgent):
                 try:
                     import requests
                     headers = {"User-Agent": "Mozilla/5.0 (compatible; AIOSSrowserAgent/1.0)"}
-                    resp = requests.get(url, headers=headers, timeout=30)
+                    proxies = self._proxy_manager.get_request_proxies(proxy)
+                    resp = requests.get(url, headers=headers, timeout=30, proxies=proxies)
                     resp.raise_for_status()
+                    if proxy:
+                        self._proxy_manager.mark_success(proxy)
                     html_content = resp.text
                 except Exception as e:
+                    if proxy:
+                        self._proxy_manager.mark_failed(proxy)
                     return AgentResult(success=False, output=None, errors=[f"Failed to fetch page: {e}"])
 
         result: Dict[str, Any] = {"url": url}
