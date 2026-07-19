@@ -7,6 +7,7 @@ from .ai_specialist.ai_specialist import AISpecialistAgent
 from .automation_specialist.automation_specialist import AutomationAgent
 from .database_specialist.database_specialist import DatabaseAgent
 from .security_specialist.security_specialist import SecurityAgent
+from .browser_agent.browser_agent import BrowserAgent
 
 __all__ = [
     "BaseAgent",
@@ -20,6 +21,7 @@ __all__ = [
     "AutomationAgent",
     "DatabaseAgent",
     "SecurityAgent",
+    "BrowserAgent",
 ]
 
 AGENT_REGISTRY = {
@@ -31,6 +33,7 @@ AGENT_REGISTRY = {
     "automation": AutomationAgent,
     "database": DatabaseAgent,
     "security": SecurityAgent,
+    "browser": BrowserAgent,
 }
 
 
