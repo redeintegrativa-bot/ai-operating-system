@@ -458,7 +458,7 @@ class TestOCRTask:
                     "type": "ocr",
                     "url": "https://example.com/img.png",
                 })
-                mock_dl.assert_called_once_with("https://example.com/img.png")
+                mock_dl.assert_called_once_with("https://example.com/img.png", None)
 
     def test_ocr_download_fails(self, agent):
         with patch.object(agent, "_download_file", return_value=""):
