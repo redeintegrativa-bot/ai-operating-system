@@ -1140,7 +1140,13 @@ class TestOCREngineExtractPDF:
         ocr._pdf_available = False
         ocr._pytesseract_available = False
         with patch("os.path.exists", return_value=True):
-            with patch("builtins.__import__", side_effect=ImportError("No lib")):
+            # Mock only the missing PDF libraries, not subprocess/PIL
+            original_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__
+            def selective_import(name, *args, **kwargs):
+                if name in ("pdftotext", "PyPDF2"):
+                    raise ImportError(f"No module named '{name}'")
+                return original_import(name, *args, **kwargs)
+            with patch("builtins.__import__", side_effect=selective_import):
                 result = ocr.extract_from_pdf("/fake/file.pdf")
                 assert "error" in result
 
@@ -1263,6 +1269,8 @@ class TestEdgeCases:
             assert isinstance(result, AgentResult)
 
     def test_context_loaded(self, agent):
+        # BrowserAgent overrides _context=None; fix it first to test BaseAgent behavior
+        agent._context = {}
         agent.load_context({"key": "value"})
         ctx = agent.get_context()
         assert ctx["key"] == "value"
