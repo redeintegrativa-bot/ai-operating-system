@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Operating System - Architecture Documentation</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-card: #16161f;
+  --bg-card-hover: #1c1c28;
+  --border: #1e1e2e;
+  --border-active: #3b3b5c;
+  --text-primary: #e4e4ed;
+  --text-secondary: #8888a4;
+  --text-muted: #55556a;
+  --accent-blue: #5b8def;
+  --accent-purple: #a78bfa;
+  --accent-green: #34d399;
+  --accent-orange: #fb923c;
+  --accent-red: #f87171;
+  --accent-cyan: #22d3ee;
+  --accent-pink: #f472b6;
+  --accent-yellow: #fbbf24;
+  --gradient-blue: linear-gradient(135deg, #5b8def, #a78bfa);
+  --gradient-green: linear-gradient(135deg, #34d399, #22d3ee);
+  --gradient-orange: linear-gradient(135deg, #fb923c, #f87171);
+  --gradient-purple: linear-gradient(135deg, #a78bfa, #f472b6);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+::selection { background: rgba(91,141,239,0.3); }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 3px; }
+
+/* Sidebar */
+.sidebar {
+  position: fixed; top:0; left:0; width: 260px; height: 100vh;
+  background: var(--bg-secondary); border-right: 1px solid var(--border);
+  padding: 24px 0; overflow-y: auto; z-index: 100;
+  transition: transform 0.3s ease;
+}
+.sidebar-header {
+  padding: 0 20px 20px; border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.sidebar-header h2 {
+  font-size: 15px; font-weight: 700;
+  background: var(--gradient-blue); -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent; background-clip: text;
+}
+.sidebar-header p { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.sidebar nav a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 20px; font-size: 13px; color: var(--text-secondary);
+  text-decoration: none; transition: all 0.15s; border-left: 2px solid transparent;
+}
+.sidebar nav a:hover { color: var(--text-primary); background: rgba(91,141,239,0.05); }
+.sidebar nav a.active {
+  color: var(--accent-blue); background: rgba(91,141,239,0.08);
+  border-left-color: var(--accent-blue);
+}
+.sidebar nav .nav-icon { font-size: 14px; width: 20px; text-align: center; }
+.sidebar nav .nav-divider {
+  height: 1px; background: var(--border); margin: 12px 20px;
+}
+
+/* Main */
+.main { margin-left: 260px; min-height: 100vh; }
+.topbar {
+  position: sticky; top:0; z-index: 50;
+  background: rgba(10,10,15,0.85); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border); padding: 16px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.topbar h1 { font-size: 18px; font-weight: 600; }
+.topbar .meta { font-size: 12px; color: var(--text-muted); }
+.topbar .meta span { color: var(--accent-green); }
+.hamburger {
+  display: none; background: none; border: none; color: var(--text-primary);
+  font-size: 22px; cursor: pointer; padding: 4px 8px;
+}
+.content { padding: 32px 40px 80px; max-width: 1200px; }
+.content section { margin-bottom: 56px; }
+.content h2 {
+  font-size: 22px; font-weight: 700; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 12px; border-bottom: 1px solid var(--border);
+}
+.content h2 .sec-icon { font-size: 20px; }
+.content h3 { font-size: 16px; font-weight: 600; margin: 20px 0 12px; color: var(--text-primary); }
+.content p { color: var(--text-secondary); margin-bottom: 12px; font-size: 14px; }
+
+/* Cards */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 20px; transition: all 0.2s;
+}
+.card:hover { border-color: var(--border-active); background: var(--bg-card-hover); transform: translateY(-1px); }
+.card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.card-icon {
+  width: 40px; height: 40px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.card-title { font-size: 14px; font-weight: 600; }
+.card-subtitle { font-size: 11px; color: var(--text-muted); }
+.card-body { font-size: 13px; color: var(--text-secondary); }
+.card-body ul { padding-left: 16px; }
+.card-body li { margin-bottom: 4px; }
+
+/* Status indicators */
+.status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; }
+.status-dot.green { background: var(--accent-green); box-shadow: 0 0 6px rgba(52,211,153,0.4); }
+.status-dot.orange { background: var(--accent-orange); box-shadow: 0 0 6px rgba(251,146,60,0.4); }
+.status-dot.red { background: var(--accent-red); box-shadow: 0 0 6px rgba(248,113,113,0.4); }
+.status-dot.blue { background: var(--accent-blue); box-shadow: 0 0 6px rgba(91,141,239,0.4); }
+.status-dot.purple { background: var(--accent-purple); box-shadow: 0 0 6px rgba(167,139,250,0.4); }
+.status-dot.yellow { background: var(--accent-yellow); box-shadow: 0 0 6px rgba(251,191,36,0.4); }
+
+/* Progress bars */
+.progress-container { margin: 8px 0; }
+.progress-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+.progress-bar { height: 6px; background: var(--bg-primary); border-radius: 3px; overflow: hidden; }
+.progress-fill {
+  height: 100%; border-radius: 3px; transition: width 1s ease;
+  background: var(--gradient-blue);
+}
+.progress-fill.green { background: var(--gradient-green); }
+.progress-fill.orange { background: var(--gradient-orange); }
+.progress-fill.purple { background: var(--gradient-purple); }
+
+/* Tables */
+.table-wrapper { overflow-x: auto; margin: 12px 0; }
+table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  background: var(--bg-card); border-radius: var(--radius-md);
+  overflow: hidden; border: 1px solid var(--border);
+}
+th {
+  text-align: left; padding: 12px 16px; font-weight: 600;
+  background: rgba(91,141,239,0.06); border-bottom: 1px solid var(--border);
+  color: var(--text-primary); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+td { padding: 10px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(91,141,239,0.03); }
+code {
+  font-family: var(--font-mono); font-size: 12px;
+  background: rgba(91,141,239,0.1); color: var(--accent-blue);
+  padding: 2px 6px; border-radius: 4px;
+}
+
+/* Mermaid */
+.mermaid-wrapper {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 24px; margin: 16px 0;
+  overflow-x: auto;
+}
+.mermaid { text-align: center; }
+
+/* Stats row */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.stat-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 16px; text-align: center;
+}
+.stat-value {
+  font-size: 28px; font-weight: 700;
+  background: var(--gradient-blue); -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent; background-clip: text;
+}
+.stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Tree */
+.tree { font-family: var(--font-mono); font-size: 12px; line-height: 1.8; color: var(--text-secondary); }
+.tree .dir { color: var(--accent-blue); font-weight: 600; }
+.tree .file { color: var(--text-secondary); }
+.tree .ext-py { color: var(--accent-green); }
+.tree .ext-sh { color: var(--accent-orange); }
+.tree .ext-json { color: var(--accent-yellow); }
+.tree .ext-md { color: var(--accent-purple); }
+.tree .ext-yml { color: var(--accent-cyan); }
+
+/* Agent cards */
+.agent-card { border-left: 3px solid var(--accent-blue); }
+.agent-card.orchestrator { border-left-color: var(--accent-blue); }
+.agent-card.researcher { border-left-color: var(--accent-green); }
+.agent-card.architect { border-left-color: var(--accent-purple); }
+.agent-card.engineer { border-left-color: var(--accent-orange); }
+.agent-card.ai { border-left-color: var(--accent-pink); }
+.agent-card.db { border-left-color: var(--accent-cyan); }
+.agent-card.security { border-left-color: var(--accent-red); }
+.agent-card.automation { border-left-color: var(--accent-yellow); }
+
+/* Chip / badge */
+.chip {
+  display: inline-block; padding: 2px 8px; font-size: 11px; font-weight: 500;
+  border-radius: 10px; background: rgba(91,141,239,0.12); color: var(--accent-blue);
+  margin: 2px;
+}
+.chip.green { background: rgba(52,211,153,0.12); color: var(--accent-green); }
+.chip.orange { background: rgba(251,146,60,0.12); color: var(--accent-orange); }
+.chip.red { background: rgba(248,113,113,0.12); color: var(--accent-red); }
+.chip.purple { background: rgba(167,139,250,0.12); color: var(--accent-purple); }
+.chip.cyan { background: rgba(34,211,238,0.12); color: var(--accent-cyan); }
+.chip.yellow { background: rgba(251,191,36,0.12); color: var(--accent-yellow); }
+.chip.pink { background: rgba(244,114,182,0.12); color: var(--accent-pink); }
+
+/* Workflow steps */
+.workflow-steps { display: flex; flex-direction: column; gap: 0; margin: 16px 0; }
+.workflow-step {
+  display: flex; gap: 16px; padding: 16px 0;
+  border-left: 2px solid var(--border); margin-left: 16px; padding-left: 24px;
+  position: relative;
+}
+.workflow-step::before {
+  content: ''; position: absolute; left: -7px; top: 20px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--accent-blue); border: 2px solid var(--bg-primary);
+}
+.workflow-step:last-child { border-left-color: transparent; }
+.workflow-step-content h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.workflow-step-content p { font-size: 13px; color: var(--text-secondary); margin: 0; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .hamburger { display: block; }
+  .content { padding: 20px 16px 60px; }
+  .topbar { padding: 12px 16px; }
+  .card-grid { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 769px) {
+  .sidebar { display: block !important; }
+}
+
+/* Animations */
+@keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+.content section { animation: fadeIn 0.4s ease; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h2>AIOS Documentation</h2>
+    <p>v0.1.0 - Architecture</p>
+  </div>
+  <nav>
+    <a href="#overview" class="active"><span class="nav-icon">◈</span> Visão Geral</a>
+    <a href="#modules"><span class="nav-icon">▣</span> Módulos</a>
+    <a href="#agents"><span class="nav-icon">◉</span> Agentes</a>
+    <div class="nav-divider"></div>
+    <a href="#flow"><span class="nav-icon">→</span> Fluxo de Funcionamento</a>
+    <a href="#context"><span class="nav-icon">◎</span> Memória e Contexto</a>
+    <a href="#orchestrator"><span class="nav-icon">⬡</span> Orquestrador</a>
+    <a href="#tasks"><span class="nav-icon">▤</span> Tarefas e Eventos</a>
+    <a href="#tools"><span class="nav-icon">⚙</span> Ferramentas</a>
+    <div class="nav-divider"></div>
+    <a href="#structure"><span class="nav-icon">⊞</span> Estrutura de Pastas</a>
+    <a href="#dependencies"><span class="nav-icon">⇌</span> Dependências</a>
+    <a href="#apis"><span class="nav-icon">⇄</span> APIs e Serviços</a>
+    <a href="#workflow"><span class="nav-icon">⟳</span> Workflow Completo</a>
+    <div class="nav-divider"></div>
+    <a href="#status"><span class="nav-icon">✓</span> Implementados</a>
+    <a href="#roadmap"><span class="nav-icon">→</span> Roadmap</a>
+  </nav>
+</aside>
+
+<!-- Main Content -->
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="hamburger" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <h1>AI Operating System</h1>
+    </div>
+    <div class="meta">Gerado em <span>19 Jul 2026</span> · Commit <code>788755c</code> · Branch <code>master</code></div>
+  </div>
+
+  <div class="content">
+
+    <!-- 1. Visão Geral -->
+    <section id="overview">
+      <h2><span class="sec-icon">◈</span> Visão Geral da Arquitetura</h2>
+      <p>O AI Operating System (AIOS) é uma arquitetura multi-agente distribuída, construída sobre um modelo event-driven. 8 agentes especializados comunicam-se assincronamente através de um message bus, coordenados por um orquestrador central.</p>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-value">8</div><div class="stat-label">Agentes</div></div>
+        <div class="stat-card"><div class="stat-value">3</div><div class="stat-label">Core Components</div></div>
+        <div class="stat-card"><div class="stat-value">6.5k</div><div class="stat-label">Linhas de Código</div></div>
+        <div class="stat-card"><div class="stat-value">78</div><div class="stat-label">Arquivos</div></div>
+        <div class="stat-card"><div class="stat-value">5</div><div class="stat-label">Docker Services</div></div>
+        <div class="stat-card"><div class="stat-value">6</div><div class="stat-label">API Endpoints</div></div>
+      </div>
+
+      <h3>Princípios Fundamentais</h3>
+      <div class="card-grid">
+        <div class="card"><div class="card-header"><div class="card-icon" style="background:rgba(91,141,239,0.12);color:var(--accent-blue)">1</div><div><div class="card-title">Autonomia dos Agentes</div></div></div><div class="card-body">Cada agente opera independentemente e toma decisões locais dentro de seu domínio de expertise.</div></div>
+        <div class="card"><div class="card-header"><div class="card-icon" style="background:rgba(167,139,250,0.12);color:var(--accent-purple)">2</div><div><div class="card-title">Acoplamento Frouxo</div></div></div><div class="card-body">Agentes comunicam-se apenas através do message bus; sem chamadas diretas agente-a-agente.</div></div>
+        <div class="card"><div class="card-header"><div class="card-icon" style="background:rgba(52,211,153,0.12);color:var(--accent-green)">3</div><div><div class="card-title">Orientado a Mensagens</div></div></div><div class="card-body">Todas as interações são mensagens assíncronas, permitindo execução paralela non-blocking.</div></div>
+        <div class="card"><div class="card-header"><div class="card-icon" style="background:rgba(251,146,60,0.12);color:var(--accent-orange)">4</div><div><div class="card-title">Isolamento de Falhas</div></div></div><div class="card-body">Falhas de agentes são contidas e repostas sem derrubar o sistema.</div></div>
+        <div class="card"><div class="card-header"><div class="card-icon" style="background:rgba(34,211,238,0.12);color:var(--accent-cyan)">5</div><div><div class="card-title">Observabilidade</div></div></div><div class="card-body">Cada mensagem, decisão e mudança de estado é registrada e rastreável.</div></div>
+      </div>
+
+      <h3>Diagrama de Arquitetura do Sistema</h3>
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+graph TB
+    subgraph "User Layer"
+        U[/"User Request"/]
+    end
+
+    subgraph "Gateway"
+        AG["API Gateway<br/><small>Auth · Rate Limit · CORS</small>"]
+    end
+
+    subgraph "Core"
+        SYS["System Core<br/><small>Lifecycle · Health · Shutdown</small>"]
+        ORC["Orchestrator<br/><small>Decompose · Route · Schedule</small>"]
+        MB["Message Bus<br/><small>Redis Streams · Pub/Sub</small>"]
+        REG["Agent Registry<br/><small>Capabilities · Health · Status</small>"]
+    end
+
+    subgraph "Agents"
+        R["Researcher<br/><small>Knowledge</small>"]
+        A["Architect<br/><small>Design</small>"]
+        E["Engineer<br/><small>Code Gen</small>"]
+        AI["AI Specialist<br/><small>ML/Models</small>"]
+        DB["DB Specialist<br/><small>Data/SQL</small>"]
+        S["Security<br/><small>Auditing</small>"]
+        AS["Automation<br/><small>Workflows</small>"]
+    end
+
+    subgraph "Infrastructure"
+        RD["Redis<br/><small>Message Bus</small>"]
+        PG["PostgreSQL<br/><small>Storage</small>"]
+        PR["Prometheus<br/><small>Metrics</small>"]
+        GF["Grafana<br/><small>Dashboards</small>"]
+    end
+
+    U --> AG
+    AG --> ORC
+    ORC <--> MB
+    ORC <--> REG
+    SYS <--> REG
+    MB <--> RD
+    MB <--> R
+    MB <--> A
+    MB <--> E
+    MB <--> AI
+    MB <--> DB
+    MB <--> S
+    MB <--> AS
+    PG -.-> DB
+    PR -.-> SYS
+    GF -.-> PR
+
+    style ORC fill:#1a2744,stroke:#5b8def,color:#e4e4ed
+    style MB fill:#1a2744,stroke:#a78bfa,color:#e4e4ed
+    style REG fill:#1a2744,stroke:#34d399,color:#e4e4ed
+    style SYS fill:#1a2744,stroke:#fb923c,color:#e4e4ed
+    style AG fill:#1a2744,stroke:#22d3ee,color:#e4e4ed
+    style R fill:#122a1f,stroke:#34d399,color:#e4e4ed
+    style A fill:#1e1a2e,stroke:#a78bfa,color:#e4e4ed
+    style E fill:#2a1c12,stroke:#fb923c,color:#e4e4ed
+    style AI fill:#2a1224,stroke:#f472b6,color:#e4e4ed
+    style DB fill:#0f2028,stroke:#22d3ee,color:#e4e4ed
+    style S fill:#281212,stroke:#f87171,color:#e4e4ed
+    style AS fill:#282208,stroke:#fbbf24,color:#e4e4ed
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Módulos Existentes -->
+    <section id="modules">
+      <h2><span class="sec-icon">▣</span> Módulos Existentes</h2>
+      <p>Todos os módulos identificados no projeto, organizados por camada funcional.</p>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Módulo</th><th>Caminho</th><th>Arquivos</th><th>Responsabilidade</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><strong>System Core</strong></td><td><code>src/core/</code></td><td>3</td><td>Gerenciamento de ciclo de vida, health monitoring, shutdown graceful</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Message Bus</strong></td><td><code>src/core/message_bus.py</code></td><td>1</td><td>Comunicação async entre agentes (pub/sub, request/reply, task queue)</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Agent Registry</strong></td><td><code>src/core/agent_registry.py</code></td><td>1</td><td>Tracking de capabilities, health status, lifecycle dos agentes</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Orchestrator</strong></td><td><code>src/agents/orchestrator/</code></td><td>3</td><td>Decomposição de tarefas, routing, lifecycle management</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Researcher</strong></td><td><code>src/agents/researcher/</code></td><td>3</td><td>Coleta de conhecimento, web search, knowledge base</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Architect</strong></td><td><code>src/agents/architect/</code></td><td>3</td><td>Design de sistemas, padrões de arquitetura, decisões ADR</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Engineer</strong></td><td><code>src/agents/engineer/</code></td><td>3</td><td>Geração de código, implementação, refactoring</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>AI Specialist</strong></td><td><code>src/agents/ai_specialist/</code></td><td>3</td><td>Gestão de modelos ML, treino, inferência, avaliação</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Database Specialist</strong></td><td><code>src/agents/database_specialist/</code></td><td>3</td><td>Otimização de queries, design de schema, migração de dados</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Security Specialist</strong></td><td><code>src/agents/security_specialist/</code></td><td>3</td><td>Scanner de vulnerabilidades, security review, compliance</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Automation Specialist</strong></td><td><code>src/agents/automation_specialist/</code></td><td>3</td><td>Workflow engine, CI/CD, deployment, scheduling</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>API Gateway</strong></td><td><code>src/integrations/</code></td><td>1</td><td>Gerenciamento centralizado de API, auth, rate limiting</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Utils</strong></td><td><code>src/utils/</code></td><td>2</td><td>Logger centralizado, config manager com env vars</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Config</strong></td><td><code>config/</code></td><td>2</td><td>Configurações padrão, settings Python, default.json</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Context System</strong></td><td><code>context/</code></td><td>9</td><td>Geração automática de contexto, templates, scripts de reconstrução</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Scripts</strong></td><td><code>scripts/</code></td><td>6</td><td>Backup automático, gestão de logs, setup, start</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+            <tr><td><strong>Tests</strong></td><td><code>tests/</code></td><td>1</td><td>Testes do orquestrador (pytest + pytest-asyncio)</td><td><span class="status"><span class="status-dot orange"></span> Parcial</span></td></tr>
+            <tr><td><strong>Docs</strong></td><td><code>docs/</code></td><td>2</td><td>Documentação de arquitetura, README adicional</td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3. Agentes e Responsabilidades -->
+    <section id="agents">
+      <h2><span class="sec-icon">◉</span> Agentes e Responsabilidades</h2>
+      <p>O sistema possui 8 agentes especializados, cada um com um domínio claro de responsabilidade e capacidades específicas registradas no Agent Registry.</p>
+
+      <div class="card-grid">
+        <div class="card agent-card orchestrator">
+          <div class="card-header">
+            <div class="card-icon" style="background:rgba(91,141,239,0.12);color:var(--accent-blue)">⬡</div>
+            <div><div class="card-title">Orchestrator</div><div class="card-subtitle">Central Router · Prioridade 1</div></div>
+          </div>
+          <div class="card-body">
+            <p><strong>Papel:</strong> Roteador central do sistema</p>
+            <ul>
+              <li>Decomposição de tarefas complexas</li>
+              <li>Roteamento baseado em capacidades</li>
+              <li>Gerenciamento de ciclo de vida</li>
+              <li>Agregação de resultados</li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip">task_decomposition</span>
+              <span class="chip">routing</span>
+              <span class="chip">lifecycle_management</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card agent-card researcher">
+          <div class="card-header">
+            <div class="card-icon" style="background:rgba(52,211,153,0.12);color:var(--accent-green)">🔍</div>
+            <div><div class="card-title">Researcher</div><div class="card-subtitle">Knowledge Gatherer · Prioridade 2</div></div>
+          </div>
+          <div class="card-body">
+            <p><strong>Papel:</strong> Coletor e analista de conhecimento</p>
+            <ul>
+              <li>Busca web e análise de documentos</li>
+              <li>Gerenciamento de knowledge base</li>
+              <li>Síntese de findings em relatórios</li>
+              <li>Vector store de informações</li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip green">web_search</span>
+              <span class="chip green">knowledge_retrieval</span>
+              <span class="chip green">summarization</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card agent-card architect">
+          <div class="card-header">
+            <div class="card-icon" style="background:rgba(167,139,250,0.12);color:var(--accent-purple)">🏛</div>
+            <div><div class="card-title">Architect</div><div class="card-subtitle">System Designer · Prioridade 2</div></div>
+          </div>
+          <div class="card-body">
+            <p><strong>Papel:</strong> Designer de sistemas e decisões arquiteturais</p>
+            <ul>
+              <li>Análise de requisitos e design</li>
+              <li>Recomendação de padrões de design</li>
+              <li>Architecture Decision Records (ADRs)</li>
+              <li>Avaliação de trade-offs</li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip purple">system_design</span>
+              <span class="chip purple">architecture_review</span>
+              <span class="chip purple">pattern_selection</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card agent-card engineer">
+          <div class="card-header">
+            <div class="card-icon" style="background:rgba(251,146,60,0.12);color:var(--accent-orange)">⌨</div>
+            <div><div class="card-title">Engineer</div><div class="card-subtitle">Code Builder · Prioridade 3</div></div>
+          </div>
+          <div class="card-body">
+            <p><strong>Papel:</strong> Construtor de código e implementação</p>
+            <ul>
+              <li>Geração de código multi-linguagem</li>
+              <li>Refactoring e otimização</li>
+              <li>Testing e validação</li>
+              <li>Debugging e resolução de issues</li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip orange">code_generation</span>
+              <span class="chip orange">refactoring</span>
+              <span class="chip orange">testing</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card agent-card ai">
+          <div class="card-header">
+            <div class="card-icon" style="background:rgba(244,114,182,0.12);color:var(--accent-pink)">🧠</div>
+            <div><div class="card-title">AI Specialist</div><div class="card-subtitle">ML Expert · Prioridade 3</div></div>
+          </div>
+          <div class="card-body">
+            <p><strong>Papel:</strong> Especialista em ML e modelos de IA</p>
+            <ul>
+              <li>Gerenciamento de ciclo de vida de modelos</li>
+              <li>Treino, inferência e otimização</li>
+              <li>Integração com APIs de IA</li>
+              <li>Monitoramento de performance e drift</li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip pink">model_management</span>
+              <span class="chip pink">training</span>
+              <span class="chip pink">inference</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card agent-card db">
+          <div class="card-header">
+            <div class="card-icon" style="background:rgba(34,211,238,0.12);color:var(--accent-cyan)">🗄</div>
+            <div><div class="card-title">Database Specialist</div><div class="card-subtitle">Data Handler · Prioridade 3</div></div>
+          </div>
+          <div class="card-body">
+            <p><strong>Papel:</strong> Especialista em dados e banco de dados</p>
+            <ul>
+              <li>Otimização de queries SQL</li>
+              <li>Design de schemas</li>
+              <li>Migração de dados e ETL</li>
+              <li>Suporte a múltiplos SGBDs</li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip cyan">query_optimization</span>
+              <span class="chip cyan">schema_design</span>
+              <span class="chip cyan">data_migration</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card agent-card security">
+          <div class="card-header">
+            <div class="card-icon" style="background:rgba(248,113,113,0.12);color:var(--accent-red)">🛡</div>
+            <div><div class="card-title">Security Specialist</div><div class="card-subtitle">Security Auditor · Prioridade 2</div></div>
+          </div>
+          <div class="card-body">
+            <p><strong>Papel:</strong> Auditor de segurança e compliance</p>
+            <ul>
+              <li>Scanner de vulnerabilidades (OWASP Top 10)</li>
+              <li>SAST/DAST e revisão de código</li>
+              <li>Verificação de compliance</li>
+              <li>Resposta a incidentes</li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip red">vulnerability_scanning</span>
+              <span class="chip red">security_review</span>
+              <span class="chip red">compliance_check</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card agent-card automation">
+          <div class="card-header">
+            <div class="card-icon" style="background:rgba(251,191,36,0.12);color:var(--accent-yellow)">⚡</div>
+            <div><div class="card-title">Automation Specialist</div><div class="card-subtitle">Workflow Engine · Prioridade 3</div></div>
+          </div>
+          <div class="card-body">
+            <p><strong>Papel:</strong> Motor de automação e workflows</p>
+            <ul>
+              <li>Criação de pipelines CI/CD</li>
+              <li>Automação de workflows repetitivos</li>
+              <li>Orquestração de deployments</li>
+              <li>Agendamento e triggers</li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip yellow">workflow_automation</span>
+              <span class="chip yellow">ci_cd</span>
+              <span class="chip yellow">deployment</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Diagrama de Workflow dos Agentes</h3>
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+graph LR
+    REQ["User Request"]
+    ORC["Orchestrator"]
+    TR["Task Router"]
+
+    REQ --> ORC
+    ORC --> TR
+
+    TR -->|"Pesquisa"| R["Researcher"]
+    TR -->|"Design"| A["Architect"]
+    TR -->|"Código"| E["Engineer"]
+    TR -->|"ML/IA"| AI["AI Specialist"]
+    TR -->|"Dados"| DB["DB Specialist"]
+    TR -->|"Segurança"| S["Security"]
+    TR -->|"Automação"| AS["Automation"]
+
+    R -->|"Resultados"| ORC
+    A -->|"Design Doc"| ORC
+    E -->|"Código Gerado"| ORC
+    AI -->|"Modelo"| ORC
+    DB -->|"Schema/Query"| ORC
+    S -->|"Audit Report"| ORC
+    AS -->|"Pipeline"| ORC
+
+    ORC -->|"Resposta Final"| RESP["User Response"]
+
+    style ORC fill:#1a2744,stroke:#5b8def,color:#e4e4ed
+    style TR fill:#1a2744,stroke:#a78bfa,color:#e4e4ed
+    style REQ fill:#1a2744,stroke:#34d399,color:#e4e4ed
+    style RESP fill:#1a2744,stroke:#34d399,color:#e4e4ed
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Fluxo de Funcionamento -->
+    <section id="flow">
+      <h2><span class="sec-icon">→</span> Fluxo de Funcionamento</h2>
+      <p>O ciclo de vida completo de uma tarefa, desde a submissão do usuário até a entrega do resultado.</p>
+
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+graph TB
+    subgraph "Entrada"
+        U["Usuário Submete Tarefa"]
+    end
+
+    subgraph "API Gateway"
+        AG["Autenticação"]
+        RL["Rate Limiting"]
+        VL["Validação"]
+    end
+
+    subgraph "Orquestrador"
+        TA["Análise de Tarefa"]
+        TD["Decomposição"]
+        RT["Roteamento"]
+        SC["Agendamento"]
+    end
+
+    subgraph "Execução Paralela"
+        AG1["Agent A"]
+        AG2["Agent B"]
+        AG3["Agent C"]
+    end
+
+    subgraph "Pós-processamento"
+        AGG["Agregador"]
+        MERGE["Merge de Resultados"]
+        CON["Conflitos"]
+    end
+
+    subgraph "Saída"
+        RES["Resposta Formatada"]
+    end
+
+    U --> AG --> RL --> VL --> TA
+    TA --> TD --> RT --> SC
+    SC --> AG1
+    SC --> AG2
+    SC --> AG3
+    AG1 --> AGG
+    AG2 --> AGG
+    AG3 --> AGG
+    AGG --> MERGE --> CON --> RES
+
+    style U fill:#0f2818,stroke:#34d399,color:#e4e4ed
+    style RES fill:#0f2818,stroke:#34d399,color:#e4e4ed
+    style TA fill:#1a2744,stroke:#5b8def,color:#e4e4ed
+    style AG1 fill:#122a1f,stroke:#34d399,color:#e4e4ed
+    style AG2 fill:#1e1a2e,stroke:#a78bfa,color:#e4e4ed
+    style AG3 fill:#2a1c12,stroke:#fb923c,color:#e4e4ed
+        </div>
+      </div>
+
+      <h3>Algoritmo de Roteamento</h3>
+      <div class="card" style="border-left:3px solid var(--accent-purple);">
+        <div class="card-body" style="font-family:var(--font-mono);font-size:12px;line-height:2;">
+          <span style="color:var(--accent-purple)">function</span> <span style="color:var(--accent-blue)">route</span>(task):<br>
+          &nbsp;&nbsp;candidates = registry.<span style="color:var(--accent-green)">find_by_capability</span>(task.required_capabilities)<br>
+          &nbsp;&nbsp;candidates = <span style="color:var(--accent-orange)">filter</span>(candidates, status == READY)<br>
+          &nbsp;&nbsp;candidates = <span style="color:var(--accent-orange)">sort</span>(candidates, by=score(task, agent))<br>
+          &nbsp;&nbsp;<span style="color:var(--accent-red)">if</span> candidates is empty:<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;queue(task, retry_after=30s)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--accent-red)">return</span><br>
+          &nbsp;&nbsp;best = candidates[0]<br>
+          &nbsp;&nbsp;<span style="color:var(--accent-green)">assign</span>(task, best)
+        </div>
+      </div>
+
+      <h3>Fatores de Scoring</h3>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-value" style="font-size:20px;">0-1</div><div class="stat-label">Capability Match</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:20px;">Load</div><div class="stat-label">Agent Load</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:20px;">Rate</div><div class="stat-label">Success Rate</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:20px;">P50-P99</div><div class="stat-label">Response Time</div></div>
+      </div>
+    </section>
+
+    <!-- 5. Memória e Contexto -->
+    <section id="context">
+      <h2><span class="sec-icon">◎</span> Memória e Contexto</h2>
+      <p>Sistema automático de geração e reconstrução de contexto para que os agentes tenham acesso ao estado do projeto antes de iniciar trabalho.</p>
+
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+graph TB
+    subgraph "Templates"
+        T1["project_state.md"]
+        T2["architecture.md"]
+        T3["agents.md"]
+        T4["workflow.md"]
+        T5["session_history.md"]
+    end
+
+    subgraph "Scripts"
+        GEN["generate_context.py"]
+        RECON["reconstruct_context.py"]
+        LOAD["load_context.py"]
+        INT["context_integration.py"]
+    end
+
+    subgraph "Generated"
+        G1["project_state.md"]
+        G2["project_snapshot.json"]
+        G3["context_summary.md"]
+        G4["session_log.json"]
+        G5["INDEX.md"]
+    end
+
+    subgraph "Agent Context"
+        PRE["pre_task_hook()"]
+        POST["post_task_hook()"]
+        AGENT["get_context_for_agent()"]
+    end
+
+    T1 --> GEN
+    T2 --> GEN
+    T3 --> GEN
+    T4 --> GEN
+    T5 --> GEN
+    GEN --> G1
+    GEN --> G2
+    GEN --> G3
+    RECON --> G2
+    RECON --> G3
+    LOAD --> G2
+    LOAD --> G3
+    INT --> PRE
+    INT --> POST
+    INT --> AGENT
+    PRE -->|"Auto-refresh se stale >5min"| RECON
+    G2 --> LOAD
+    G3 --> LOAD
+
+    style GEN fill:#1a2744,stroke:#5b8def,color:#e4e4ed
+    style RECON fill:#1a2744,stroke:#a78bfa,color:#e4e4ed
+    style LOAD fill:#1a2744,stroke:#34d399,color:#e4e4ed
+    style INT fill:#1a2744,stroke:#fb923c,color:#e4e4ed
+        </div>
+      </div>
+
+      <h3>Agent Context Profiles</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Agent Type</th><th>Context Level</th><th>Focus Areas</th><th>Instructions</th></tr></thead>
+          <tbody>
+            <tr><td><span class="chip">coder</span></td><td>summary</td><td><code>src/</code>, <code>scripts/</code>, <code>config/</code></td><td>Foco em implementação de código. Verificar padrões existentes antes de escrever.</td></tr>
+            <tr><td><span class="chip purple">reviewer</span></td><td>full</td><td><code>src/</code>, <code>tests/</code>, <code>docs/</code></td><td>Revisar qualidade, segurança e aderência a convenções do projeto.</td></tr>
+            <tr><td><span class="chip cyan">architect</span></td><td>full</td><td><code>src/</code>, <code>config/</code>, <code>docs/</code>, <code>context/</code></td><td>Considerar arquitetura do sistema e interações entre componentes.</td></tr>
+            <tr><td><span class="chip orange">debugger</span></td><td>summary</td><td><code>src/</code>, <code>logs/</code>, <code>tests/</code></td><td>Investigar issues sistematicamente. Verificar logs e outputs de teste.</td></tr>
+            <tr><td><span class="chip green">tester</span></td><td>summary</td><td><code>tests/</code>, <code>src/</code>, <code>config/</code></td><td>Escrever e rodar testes. Garantir cobertura de caminhos críticos.</td></tr>
+            <tr><td><span class="chip yellow">devops</span></td><td>minimal</td><td><code>docker-compose.yml</code>, <code>scripts/</code>, <code>config/</code></td><td>Gerenciar deployment, containers e infraestrutura.</td></tr>
+            <tr><td><span class="chip pink">docwriter</span></td><td>minimal</td><td><code>docs/</code>, <code>README.md</code>, <code>src/</code></td><td>Documentar features, APIs e workflows claramente.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Scripts do Sistema de Contexto</h3>
+      <div class="card-grid">
+        <div class="card"><div class="card-header"><div class="card-icon" style="background:rgba(91,141,239,0.12);color:var(--accent-blue)">G</div><div><div class="card-title">generate_context.py</div><div class="card-subtitle">294 linhas</div></div></div><div class="card-body">Escaneia o projeto e gera arquivos de contexto a partir de templates. Preenche variáveis <code>{{timestamp}}</code>, <code>{{version}}</code>, <code>{{file_tree}}</code>.</div></div>
+        <div class="card"><div class="card-header"><div class="card-icon" style="background:rgba(167,139,250,0.12);color:var(--accent-purple)">R</div><div><div class="card-title">reconstruct_context.py</div><div class="card-subtitle">352 linhas</div></div></div><div class="card-body">Analisa git state, escaneia estrutura, lê configs. Gera <code>project_snapshot.json</code> e <code>context_summary.md</code>.</div></div>
+        <div class="card"><div class="card-header"><div class="card-icon" style="background:rgba(52,211,153,0.12);color:var(--accent-green)">L</div><div><div class="card-title">load_context.py</div><div class="card-subtitle">292 linhas</div></div></div><div class="card-body">Carrega contexto gerado e formata para injeção em prompts. Suporta 3 níveis: full, summary, minimal. Auto-refresh se stale >5min.</div></div>
+        <div class="card"><div class="card-header"><div class="card-icon" style="background:rgba(251,146,60,0.12);color:var(--accent-orange)">I</div><div><div class="card-title">context_integration.py</div><div class="card-subtitle">445 linhas</div></div></div><div class="card-body">Hooks para o orquestrador: <code>pre_task_hook()</code>, <code>post_task_hook()</code>, <code>get_context_for_agent()</code>. Cache com 5min TTL.</div></div>
+      </div>
+    </section>
+
+    <!-- 6. Orquestrador -->
+    <section id="orchestrator">
+      <h2><span class="sec-icon">⬡</span> Orquestrador</h2>
+      <p>O cérebro do sistema. Analisa pedidos, decompõe em subtarefas, roteia para agentes e agrega resultados.</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(91,141,239,0.12);color:var(--accent-blue)">1</div><div><div class="card-title">Análise de Tarefa</div></div></div>
+          <div class="card-body">Parse da requisição para entender intenção e requisitos. Classificação de prioridade (critical, high, medium, low).</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(167,139,250,0.12);color:var(--accent-purple)">2</div><div><div class="card-title">Decomposição</div></div></div>
+          <div class="card-body">Quebra de tarefas complexas em subtarefas com dependências. Máximo 4 agentes paralelos.</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(52,211,153,0.12);color:var(--accent-green)">3</div><div><div class="card-title">Roteamento</div></div></div>
+          <div class="card-body">Match de subtarefas com agentes baseado em capabilities e disponibilidade. Strategy: capability_based.</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(251,146,60,0.12);color:var(--accent-orange)">4</div><div><div class="card-title">Agendamento</div></div></div>
+          <div class="card-body">Ordem de execução respeitando dependências. Execução paralela quando possível.</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(34,211,238,0.12);color:var(--accent-cyan)">5</div><div><div class="card-title">Agregação</div></div></div>
+          <div class="card-body">Coleta de resultados dos agentes e composição da saída final.</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(248,113,113,0.12);color:var(--accent-red)">6</div><div><div class="card-title">Tratamento de Erros</div></div></div>
+          <div class="card-body">Detecção de falhas, retry, re-roting ou escalonamento. Circuit breaker para agentes com alta taxa de falha.</div>
+        </div>
+      </div>
+
+      <h3>Configuração do Orquestrador</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Parâmetro</th><th>Valor</th><th>Descrição</th></tr></thead>
+          <tbody>
+            <tr><td><code>task_decomposition</code></td><td><span class="chip green">true</span></td><td>Ativa decomposição automática de tarefas</td></tr>
+            <tr><td><code>parallel_execution</code></td><td><span class="chip green">true</span></td><td>Permite execução paralela de agentes</td></tr>
+            <tr><td><code>max_parallel_agents</code></td><td><span class="chip">4</span></td><td>Máximo de agentes executando simultaneamente</td></tr>
+            <tr><td><code>routing_strategy</code></td><td><span class="chip purple">capability_based</span></td><td>Estratégia de roteamento</td></tr>
+            <tr><td><code>default_priority</code></td><td><span class="chip yellow">medium</span></td><td>Prioridade padrão de tarefas</td></tr>
+            <tr><td><code>retry_count</code></td><td><span class="chip">3</span></td><td>Número máximo de retries por tarefa</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 7. Tarefas e Eventos -->
+    <section id="tasks">
+      <h2><span class="sec-icon">▤</span> Tarefas e Eventos</h2>
+      <p>Ciclo de vida das tarefas e o sistema de mensagens que coordena a comunicação entre agentes.</p>
+
+      <h3>Task Lifecycle</h3>
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+stateDiagram-v2
+    [*] --> PENDING
+    PENDING --> ROUTING : Orchestrator analisa
+    ROUTING --> ASSIGNED : Agente selecionado
+    ASSIGNED --> RUNNING : Agente inicia execução
+    RUNNING --> COMPLETED : Sucesso
+    RUNNING --> FAILED : Falha
+    RUNNING --> TIMEOUT : Timeout excedido
+    FAILED --> RETRYING : Retry habilitado
+    RETRYING --> ASSIGNED : Re-roting
+    TIMEOUT --> FAILED : Timeout tratado
+    COMPLETED --> [*]
+    FAILED --> [*] : Max retries excedido
+
+    state "Config" as CFG {
+        timeout: 300s default
+        retries: 3 max
+        heartbeat: 15s interval
+    }
+        </div>
+      </div>
+
+      <h3>Message Bus Patterns</h3>
+      <div class="card-grid">
+        <div class="card" style="border-left:3px solid var(--accent-blue);">
+          <div class="card-header"><div class="card-title">Publish/Subscribe</div></div>
+          <div class="card-body">Broadcast de mensagens para todos os subscribers. Usado para health broadcasts e notificações de estado.</div>
+        </div>
+        <div class="card" style="border-left:3px solid var(--accent-green);">
+          <div class="card-header"><div class="card-title">Request/Reply</div></div>
+          <div class="card-body">Chamadas síncronas com correlation IDs. Usado para queries entre agentes e respostas diretas.</div>
+        </div>
+        <div class="card" style="border-left:3px solid var(--accent-purple);">
+          <div class="card-header"><div class="card-title">Task Queue</div></div>
+          <div class="card-body">Filas duráveis para distribuição de trabalho. Redis Streams com at-least-once delivery e dead letter queue.</div>
+        </div>
+      </div>
+
+      <h3>Fault Tolerance</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Cenário</th><th>Estratégia</th><th>Detalhe</th></tr></thead>
+          <tbody>
+            <tr><td>Agent crash</td><td>Heartbeat detection</td><td>Tarefa re-rota para outro agente via heartbeat perdido</td></tr>
+            <tr><td>Message loss</td><td>Redis Streams</td><td>At-least-once delivery; idempotency keys previnem duplicação</td></tr>
+            <tr><td>Timeout</td><td>Configurable timeout</td><td>Tarefas com timeout configurável; excedidas são canceladas e repostas</td></tr>
+            <tr><td>High failure rate</td><td>Circuit breaker</td><td>Agentes com alta taxa de falha temporariamente offline</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 8. Ferramentas -->
+    <section id="tools">
+      <h2><span class="sec-icon">⚙</span> Ferramentas</h2>
+      <p>Scripts, utilitários e ferramentas disponíveis no projeto.</p>
+
+      <h3>Scripts Shell</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(251,146,60,0.12);color:var(--accent-orange)">B</div><div><div class="card-title">auto_backup.sh</div><div class="card-subtitle">439 linhas · Daemon de backup automático</div></div></div>
+          <div class="card-body">
+            <p>Monitora o projeto para mudanças, faz commit e push automaticamente. Suporta inotifywait (preferido) ou polling.</p>
+            <div style="margin-top:8px"><span class="chip orange">inotifywait</span><span class="chip orange">polling</span><span class="chip orange">daemon mode</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(52,211,153,0.12);color:var(--accent-green)">V</div><div><div class="card-title">view_logs.sh</div><div class="card-subtitle">251 linhas · Visualizador de logs</div></div></div>
+          <div class="card-body">
+            <p>Visualiza logs com filtros por data, nível e texto. Suporta follow em tempo real e output colorido.</p>
+            <div style="margin-top:8px"><span class="chip green">filter by level</span><span class="chip green">search</span><span class="chip green">real-time</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(248,113,113,0.12);color:var(--accent-red)">C</div><div><div class="card-title">cleanup_logs.sh</div><div class="card-subtitle">305 linhas · Limpeza e arquivamento</div></div></div>
+          <div class="card-body">
+            <p>Remove logs antigos, arquiva em tar.gz. Suporta dry-run e cron para automação.</p>
+            <div style="margin-top:8px"><span class="chip red">retention policy</span><span class="chip red">archive</span><span class="chip red">dry-run</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(91,141,239,0.12);color:var(--accent-blue)">S</div><div><div class="card-title">start_backup_service.sh</div><div class="card-subtitle">94 linhas · Auto-start wrapper</div></div></div>
+          <div class="card-body">
+            <p>Wrapper idempotente que verifica se o serviço já está rodando antes de iniciar. Safe para múltiplas chamadas.</p>
+            <div style="margin-top:8px"><span class="chip">idempotent</span><span class="chip">PID check</span><span class="chip">nohup</span></div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Dependências Python (requirements.txt)</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Categoria</th><th>Pacotes</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Core</strong></td><td><code>pydantic</code> <code>pyyaml</code> <code>python-dotenv</code> <code>click</code> <code>rich</code></td></tr>
+            <tr><td><strong>Async</strong></td><td><code>asyncio-mqtt</code> <code>aiohttp</code> <code>aiofiles</code></td></tr>
+            <tr><td><strong>Data/Storage</strong></td><td><code>sqlalchemy</code> <code>alembic</code> <code>aiosqlite</code> <code>redis</code></td></tr>
+            <tr><td><strong>AI/LLM</strong></td><td><code>openai</code> <code>anthropic</code> <code>tiktoken</code> <code>langchain</code> <code>langchain-community</code></td></tr>
+            <tr><td><strong>Web/API</strong></td><td><code>fastapi</code> <code>uvicorn</code> <code>httpx</code></td></tr>
+            <tr><td><strong>Testing</strong></td><td><code>pytest</code> <code>pytest-asyncio</code> <code>pytest-cov</code> <code>pytest-mock</code></td></tr>
+            <tr><td><strong>Code Quality</strong></td><td><code>ruff</code> <code>mypy</code></td></tr>
+            <tr><td><strong>Monitoring</strong></td><td><code>structlog</code> <code>prometheus-client</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Dependências Node.js (package.json)</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Categoria</th><th>Pacotes</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Runtime</strong></td><td><code>express</code> <code>ioredis</code> <code>winston</code> <code>zod</code> <code>uuid</code> <code>dotenv</code> <code>cors</code> <code>helmet</code> <code>compression</code> <code>rate-limiter-flexible</code></td></tr>
+            <tr><td><strong>Dev</strong></td><td><code>typescript</code> <code>eslint</code> <code>prettier</code> <code>jest</code> <code>ts-jest</code> <code>nodemon</code> <code>docsify-cli</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 9. Estrutura de Pastas -->
+    <section id="structure">
+      <h2><span class="sec-icon">⊞</span> Estrutura de Pastas</h2>
+      <p>Árvore completa do projeto com 78 arquivos e 23 diretórios.</p>
+
+      <div class="card" style="background:var(--bg-primary);padding:24px;">
+        <div class="tree">
+<span class="dir">ai-operating-system/</span>
+├── <span class="dir">config/</span>
+│   ├── <span class="file ext-json">default.json</span> <span style="color:var(--text-muted)">  # Configurações padrão do sistema</span>
+│   └── <span class="file ext-py">settings.py</span> <span style="color:var(--text-muted)">   # Loader de configuração Python</span>
+├── <span class="dir">context/</span>
+│   ├── <span class="dir">generated/</span> <span style="color:var(--text-muted)">   # Arquivos de contexto gerados automaticamente</span>
+│   │   ├── <span class="file ext-md">INDEX.md</span>
+│   │   ├── <span class="file ext-md">agents.md</span>
+│   │   ├── <span class="file ext-md">architecture.md</span>
+│   │   ├── <span class="file ext-md">context_summary.md</span>
+│   │   ├── <span class="file ext-md">project_state.md</span>
+│   │   ├── <span class="file">project_snapshot.json</span>
+│   │   ├── <span class="file ext-md">session_history.md</span>
+│   │   ├── <span class="file">session_log.json</span>
+│   │   └── <span class="file ext-md">workflow.md</span>
+│   ├── <span class="dir">scripts/</span> <span style="color:var(--text-muted)">    # Scripts de geração e loading</span>
+│   │   ├── <span class="file ext-py">context_integration.py</span> <span style="color:var(--text-muted)"> # 445 linhas</span>
+│   │   ├── <span class="file ext-py">generate_context.py</span> <span style="color:var(--text-muted)">    # 294 linhas</span>
+│   │   ├── <span class="file ext-py">load_context.py</span> <span style="color:var(--text-muted)">         # 292 linhas</span>
+│   │   └── <span class="file ext-py">reconstruct_context.py</span> <span style="color:var(--text-muted)"> # 352 linhas</span>
+│   ├── <span class="dir">templates/</span> <span style="color:var(--text-muted)">   # Templates com placeholders</span>
+│   │   ├── <span class="file ext-md">agents.md</span>
+│   │   ├── <span class="file ext-md">architecture.md</span>
+│   │   ├── <span class="file ext-md">project_state.md</span>
+│   │   ├── <span class="file ext-md">session_history.md</span>
+│   │   └── <span class="file ext-md">workflow.md</span>
+│   └── <span class="file ext-md">README.md</span>
+├── <span class="dir">docs/</span>
+│   ├── <span class="file ext-md">ARCHITECTURE.md</span> <span style="color:var(--text-muted)"> # Documentação detalhada de arquitetura</span>
+│   └── <span class="file ext-md">README.md</span>
+├── <span class="dir">scripts/</span>
+│   ├── <span class="file ext-sh">auto_backup.sh</span> <span style="color:var(--text-muted)">          # 439 linhas</span>
+│   ├── <span class="file ext-sh">cleanup_logs.sh</span> <span style="color:var(--text-muted)">         # 305 linhas</span>
+│   ├── <span class="file ext-sh">setup.sh</span>
+│   ├── <span class="file ext-sh">start.sh</span>
+│   ├── <span class="file ext-sh">start_backup_service.sh</span> <span style="color:var(--text-muted)"> # 94 linhas</span>
+│   └── <span class="file ext-sh">view_logs.sh</span> <span style="color:var(--text-muted)">            # 251 linhas</span>
+├── <span class="dir">src/</span>
+│   ├── <span class="dir">agents/</span>
+│   │   ├── <span class="dir">ai_specialist/</span>
+│   │   │   ├── <span class="file ext-py">__init__.py</span>
+│   │   │   ├── <span class="file ext-py">ai_specialist.py</span>
+│   │   │   └── <span class="file ext-py">model_manager.py</span>
+│   │   ├── <span class="dir">architect/</span>
+│   │   │   ├── <span class="file ext-py">__init__.py</span>
+│   │   │   ├── <span class="file ext-py">architect.py</span>
+│   │   │   └── <span class="file ext-py">design_patterns.py</span>
+│   │   ├── <span class="dir">automation_specialist/</span>
+│   │   │   ├── <span class="file ext-py">__init__.py</span>
+│   │   │   ├── <span class="file ext-py">automation_specialist.py</span>
+│   │   │   └── <span class="file ext-py">workflow_engine.py</span>
+│   │   ├── <span class="dir">database_specialist/</span>
+│   │   │   ├── <span class="file ext-py">__init__.py</span>
+│   │   │   ├── <span class="file ext-py">database_specialist.py</span>
+│   │   │   └── <span class="file ext-py">query_optimizer.py</span>
+│   │   ├── <span class="dir">engineer/</span>
+│   │   │   ├── <span class="file ext-py">__init__.py</span>
+│   │   │   ├── <span class="file ext-py">code_generator.py</span>
+│   │   │   └── <span class="file ext-py">engineer.py</span>
+│   │   ├── <span class="dir">orchestrator/</span>
+│   │   │   ├── <span class="file ext-py">__init__.py</span>
+│   │   │   ├── <span class="file ext-py">orchestrator.py</span>
+│   │   │   └── <span class="file ext-py">task_router.py</span>
+│   │   ├── <span class="dir">researcher/</span>
+│   │   │   ├── <span class="file ext-py">__init__.py</span>
+│   │   │   ├── <span class="file ext-py">knowledge_base.py</span>
+│   │   │   └── <span class="file ext-py">researcher.py</span>
+│   │   └── <span class="dir">security_specialist/</span>
+│   │       ├── <span class="file ext-py">__init__.py</span>
+│   │       ├── <span class="file ext-py">security_scanner.py</span>
+│   │       └── <span class="file ext-py">security_specialist.py</span>
+│   ├── <span class="dir">core/</span>
+│   │   ├── <span class="file ext-py">__init__.py</span>
+│   │   ├── <span class="file ext-py">agent_registry.py</span>
+│   │   ├── <span class="file ext-py">message_bus.py</span>
+│   │   └── <span class="file ext-py">system.py</span>
+│   ├── <span class="dir">integrations/</span>
+│   │   ├── <span class="file ext-py">__init__.py</span>
+│   │   └── <span class="file ext-py">api_gateway.py</span>
+│   └── <span class="dir">utils/</span>
+│       ├── <span class="file ext-py">__init__.py</span>
+│       ├── <span class="file ext-py">config_manager.py</span>
+│       └── <span class="file ext-py">logger.py</span>
+├── <span class="dir">tests/</span>
+│   ├── <span class="file ext-py">__init__.py</span>
+│   └── <span class="file ext-py">test_orchestrator.py</span>
+├── <span class="file ext-md">CONTRIBUTING.md</span>
+├── <span class="file">LICENSE</span>
+├── <span class="file ext-md">README.md</span>
+├── <span class="file">docker-compose.yml</span>
+├── <span class="file ext-json">package.json</span>
+└── <span class="file">requirements.txt</span>
+        </div>
+      </div>
+
+      <h3>Distribuição por Tipo de Arquivo</h3>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-value" style="font-size:20px;color:var(--accent-green)">40</div><div class="stat-label">.py (1.495 loc)</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:20px;color:var(--accent-purple)">17</div><div class="stat-label">.md (3.030 loc)</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:20px;color:var(--accent-orange)">6</div><div class="stat-label">.sh (1.101 loc)</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:20px;color:var(--accent-yellow)">3</div><div class="stat-label">.json (337 loc)</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:20px;color:var(--accent-cyan)">2</div><div class="stat-label">.yml (113 loc)</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:20px">10</div><div class="stat-label">Outros</div></div>
+      </div>
+    </section>
+
+    <!-- 10. Dependências entre Módulos -->
+    <section id="dependencies">
+      <h2><span class="sec-icon">⇌</span> Dependências entre Módulos</h2>
+      <p>Mapa de dependências entre os componentes do sistema.</p>
+
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+graph TB
+    subgraph "Core"
+        SYS["system.py"]
+        MB["message_bus.py"]
+        REG["agent_registry.py"]
+    end
+
+    subgraph "Orchestrator"
+        ORC["orchestrator.py"]
+        TR["task_router.py"]
+    end
+
+    subgraph "Agents"
+        R["researcher.py"]
+        KB["knowledge_base.py"]
+        A["architect.py"]
+        DP["design_patterns.py"]
+        E["engineer.py"]
+        CG["code_generator.py"]
+        AI_SP["ai_specialist.py"]
+        MM["model_manager.py"]
+        DB_SP["database_specialist.py"]
+        QO["query_optimizer.py"]
+        S_SP["security_specialist.py"]
+        SS["security_scanner.py"]
+        AS_SP["automation_specialist.py"]
+        WE["workflow_engine.py"]
+    end
+
+    subgraph "Integrations"
+        AG["api_gateway.py"]
+    end
+
+    subgraph "Utils"
+        LOG["logger.py"]
+        CFG["config_manager.py"]
+    end
+
+    subgraph "Config"
+        DJ["default.json"]
+        ST["settings.py"]
+    end
+
+    SYS --> MB
+    SYS --> REG
+    SYS --> LOG
+    SYS --> CFG
+
+    ORC --> MB
+    ORC --> REG
+    ORC --> TR
+    ORC --> LOG
+
+    TR --> MB
+    TR --> REG
+
+    MB --> DJ
+
+    R --> MB
+    R --> KB
+    A --> MB
+    A --> DP
+    E --> MB
+    E --> CG
+    AI_SP --> MB
+    AI_SP --> MM
+    DB_SP --> MB
+    DB_SP --> QO
+    S_SP --> MB
+    S_SP --> SS
+    AS_SP --> MB
+    AS_SP --> WE
+
+    AG --> MB
+    AG --> LOG
+
+    CFG --> DJ
+    CFG --> ST
+
+    style SYS fill:#1a2744,stroke:#fb923c,color:#e4e4ed
+    style MB fill:#1a2744,stroke:#a78bfa,color:#e4e4ed
+    style REG fill:#1a2744,stroke:#34d399,color:#e4e4ed
+    style ORC fill:#1a2744,stroke:#5b8def,color:#e4e4ed
+    style AG fill:#1a2744,stroke:#22d3ee,color:#e4e4ed
+        </div>
+      </div>
+
+      <h3>Matriz de Dependências</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Módulo</th><th>Depende De</th><th>Dependentes</th></tr></thead>
+          <tbody>
+            <tr><td><code>system.py</code></td><td>message_bus, agent_registry, logger, config_manager</td><td>Orchestrator, API Gateway</td></tr>
+            <tr><td><code>message_bus.py</code></td><td>config (default.json)</td><td>Todos os agentes, Orchestrator, API Gateway</td></tr>
+            <tr><td><code>agent_registry.py</code></td><td>config (default.json)</td><td>Orchestrator, system.py</td></tr>
+            <tr><td><code>orchestrator.py</code></td><td>message_bus, agent_registry, task_router, logger</td><td>API Gateway</td></tr>
+            <tr><td><code>task_router.py</code></td><td>message_bus, agent_registry</td><td>orchestrator.py</td></tr>
+            <tr><td><code>api_gateway.py</code></td><td>message_bus, logger</td><td>system.py</td></tr>
+            <tr><td><code>logger.py</code></td><td>structlog</td><td>Todos os módulos</td></tr>
+            <tr><td><code>config_manager.py</code></td><td>pyyaml, python-dotenv</td><td>system.py</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 11. APIs e Serviços -->
+    <section id="apis">
+      <h2><span class="sec-icon">⇄</span> APIs e Serviços</h2>
+      <p>Endpoints REST expostos pelo API Gateway e serviços Docker.</p>
+
+      <h3>REST API Endpoints</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Endpoint</th><th>Método</th><th>Descrição</th><th>Autenticação</th></tr></thead>
+          <tbody>
+            <tr><td><code>/api/v1/tasks</code></td><td><span class="chip green">POST</span></td><td>Submeter nova tarefa</td><td>API Key / JWT</td></tr>
+            <tr><td><code>/api/v1/tasks/:id</code></td><td><span class="chip">GET</span></td><td>Obter status da tarefa</td><td>API Key / JWT</td></tr>
+            <tr><td><code>/api/v1/tasks/:id</code></td><td><span class="chip red">DELETE</span></td><td>Cancelar tarefa</td><td>API Key / JWT</td></tr>
+            <tr><td><code>/api/v1/agents</code></td><td><span class="chip">GET</span></td><td>Listar agentes registrados</td><td>API Key / JWT</td></tr>
+            <tr><td><code>/api/v1/agents/:name/health</code></td><td><span class="chip">GET</span></td><td>Health check de agente</td><td>API Key / JWT</td></tr>
+            <tr><td><code>/api/v1/system/health</code></td><td><span class="chip">GET</span></td><td>Health status do sistema</td><td>Nenhuma</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Environment Variables</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Variável</th><th>Default</th><th>Descrição</th></tr></thead>
+          <tbody>
+            <tr><td><code>AIOS_LOG_LEVEL</code></td><td><code>INFO</code></td><td>Nível de logging</td></tr>
+            <tr><td><code>AIOS_HOST</code></td><td><code>0.0.0.0</code></td><td>Bind address do servidor</td></tr>
+            <tr><td><code>AIOS_PORT</code></td><td><code>8080</code></td><td>Porta do servidor</td></tr>
+            <tr><td><code>OPENAI_API_KEY</code></td><td>—</td><td>Chave API OpenAI</td></tr>
+            <tr><td><code>ANTHROPIC_API_KEY</code></td><td>—</td><td>Chave API Anthropic</td></tr>
+            <tr><td><code>AIOS_DB_URL</code></td><td><code>sqlite:///aios.db</code></td><td>URL de conexão do banco</td></tr>
+            <tr><td><code>AIOS_REDIS_URL</code></td><td><code>redis://localhost:6379</code></td><td>URL do Redis</td></tr>
+            <tr><td><code>MAX_CONCURRENT_TASKS</code></td><td><code>10</code></td><td>Máximo de tarefas concorrentes</td></tr>
+            <tr><td><code>AGENT_TIMEOUT_SECONDS</code></td><td><code>300</code></td><td>Timeout de agentes</td></tr>
+            <tr><td><code>ENABLE_AUTH</code></td><td><code>false</code></td><td>Ativar autenticação</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Serviços Docker</h3>
+      <div class="card-grid">
+        <div class="card" style="border-left:3px solid var(--accent-blue);">
+          <div class="card-header"><div class="card-title">aios-core</div></div>
+          <div class="card-body">
+            <p>Serviço principal do AIOS. Porta 8080. Health check via curl.</p>
+            <div style="margin-top:8px"><span class="chip">Python</span><span class="chip">FastAPI</span><span class="chip">port 8080</span></div>
+          </div>
+        </div>
+        <div class="card" style="border-left:3px solid var(--accent-red);">
+          <div class="card-header"><div class="card-title">aios-redis</div></div>
+          <div class="card-body">
+            <p>Redis 7 Alpine para message bus e caching. Porta 6379.</p>
+            <div style="margin-top:8px"><span class="chip red">Redis 7</span><span class="chip red">port 6379</span><span class="chip red">healthcheck: ping</span></div>
+          </div>
+        </div>
+        <div class="card" style="border-left:3px solid var(--accent-cyan);">
+          <div class="card-header"><div class="card-title">aios-postgres</div></div>
+          <div class="card-body">
+            <p>PostgreSQL 16 Alpine para storage persistente. Porta 5432.</p>
+            <div style="margin-top:8px"><span class="chip cyan">PostgreSQL 16</span><span class="chip cyan">port 5432</span></div>
+          </div>
+        </div>
+        <div class="card" style="border-left:3px solid var(--accent-orange);">
+          <div class="card-header"><div class="card-title">aios-prometheus</div></div>
+          <div class="card-body">
+            <p>Prometheus para métricas. Porta 9090. Profile: monitoring.</p>
+            <div style="margin-top:8px"><span class="chip orange">Prometheus</span><span class="chip orange">port 9090</span><span class="chip orange">profile: monitoring</span></div>
+          </div>
+        </div>
+        <div class="card" style="border-left:3px solid var(--accent-purple);">
+          <div class="card-header"><div class="card-title">aios-grafana</div></div>
+          <div class="card-body">
+            <p>Grafana para dashboards. Porta 3000. Profile: monitoring.</p>
+            <div style="margin-top:8px"><span class="chip purple">Grafana</span><span class="chip purple">port 3000</span><span class="chip purple">profile: monitoring</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12. Workflow Completo -->
+    <section id="workflow">
+      <h2><span class="sec-icon">⟳</span> Workflow Completo</h2>
+      <p>Fluxo de trabalho completo do sistema, desde a recepção de uma requisição até a entrega do resultado.</p>
+
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant AG as API Gateway
+    participant ORC as Orchestrator
+    participant TR as Task Router
+    participant REG as Agent Registry
+    participant MB as Message Bus
+    participant A1 as Agent 1
+    participant A2 as Agent 2
+    participant A3 as Agent 3
+
+    U->>AG: POST /api/v1/tasks
+    AG->>AG: Autenticação & Rate Limit
+    AG->>ORC: Tarefa validada
+
+    Note over ORC: Análise de Tarefa
+    ORC->>ORC: Decomposição em subtarefas
+
+    loop Para cada subtarefa
+        ORC->>TR: Roteamento
+        TR->>REG: Buscar agentes disponíveis
+        REG-->>TR: Lista de candidatos
+        TR->>TR: Scoring & Seleção
+        TR-->>ORC: Agente atribuído
+    end
+
+    par Execução Paralela
+        ORC->>MB: Atribuir tarefa ao Agente 1
+        MB->>A1: Tarefa recebida
+        ORC->>MB: Atribuir tarefa ao Agente 2
+        MB->>A2: Tarefa recebida
+        ORC->>MB: Atribuir tarefa ao Agente 3
+        MB->>A3: Tarefa recebida
+    end
+
+    A1->>MB: Resultado
+    A2->>MB: Resultado
+    A3->>MB: Resultado
+
+    MB->>ORC: Todos os resultados coletados
+    ORC->>ORC: Agregação & Merge
+    ORC->>AG: Resposta formatada
+    AG->>U: 200 OK + Resultado
+        </div>
+      </div>
+
+      <h3>Passos do Workflow</h3>
+      <div class="workflow-steps">
+        <div class="workflow-step">
+          <div class="workflow-step-content">
+            <h4>1. Recepção da Requisição</h4>
+            <p>Usuário submete tarefa via REST API. API Gateway valida autenticação, aplica rate limiting e valida input.</p>
+          </div>
+        </div>
+        <div class="workflow-step">
+          <div class="workflow-step-content">
+            <h4>2. Análise e Decomposição</h4>
+            <p>Orchestrator analisa a requisição, entende intenção e requisitos, e decompõe em subtarefas menores com dependências.</p>
+          </div>
+        </div>
+        <div class="workflow-step">
+          <div class="workflow-step-content">
+            <h4>3. Roteamento</h4>
+            <p>Task Router consulta o Agent Registry para encontrar agentes com capacidades adequadas. Aplica scoring baseado em capability match, load e success rate.</p>
+          </div>
+        </div>
+        <div class="workflow-step">
+          <div class="workflow-step-content">
+            <h4>4. Execução Paralela</h4>
+            <p>Subtarefas são distribuídas para agentes via Message Bus. Agentes executam independentemente de forma assíncrona e paralela.</p>
+          </div>
+        </div>
+        <div class="workflow-step">
+          <div class="workflow-step-content">
+            <h4>5. Coleta de Resultados</h4>
+            <p>Orchestrator coleta resultados via Message Bus. Monitora timeouts e falhas. Aplica retry/re-route quando necessário.</p>
+          </div>
+        </div>
+        <div class="workflow-step">
+          <div class="workflow-step-content">
+            <h4>6. Agregação e Entrega</h4>
+            <p>Resultados são mergeados, conflitos resolvidos, e resposta formatada é devolvida ao usuário via API Gateway.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13. Implementados vs Planejados -->
+    <section id="status">
+      <h2><span class="sec-icon">✓</span> Recursos Implementados vs Planejados</h2>
+      <p>Análise do estado atual de implementação de cada componente do sistema.</p>
+
+      <h3>Status Geral</h3>
+      <div class="progress-container">
+        <div class="progress-label"><span>Core Infrastructure</span><span>90%</span></div>
+        <div class="progress-bar"><div class="progress-fill green" style="width:90%"></div></div>
+      </div>
+      <div class="progress-container">
+        <div class="progress-label"><span>Agentes</span><span>85%</span></div>
+        <div class="progress-bar"><div class="progress-fill green" style="width:85%"></div></div>
+      </div>
+      <div class="progress-container">
+        <div class="progress-label"><span>Context System</span><span>95%</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:95%"></div></div>
+      </div>
+      <div class="progress-container">
+        <div class="progress-label"><span>Scripts & Ops</span><span>100%</span></div>
+        <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+      </div>
+      <div class="progress-container">
+        <div class="progress-label"><span>API Gateway</span><span>75%</span></div>
+        <div class="progress-bar"><div class="progress-fill orange" style="width:75%"></div></div>
+      </div>
+      <div class="progress-container">
+        <div class="progress-label"><span>Testes</span><span>30%</span></div>
+        <div class="progress-bar"><div class="progress-fill orange" style="width:30%"></div></div>
+      </div>
+      <div class="progress-container">
+        <div class="progress-label"><span>Monitoring</span><span>60%</span></div>
+        <div class="progress-bar"><div class="progress-fill purple" style="width:60%"></div></div>
+      </div>
+
+      <h3>Detalhamento por Componente</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Componente</th><th>Status</th><th>Descrição</th><th>Progresso</th></tr></thead>
+          <tbody>
+            <tr><td><strong>System Core</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>Estrutura base com lifecycle, health, shutdown</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:90%"></div></div> 90%</td></tr>
+            <tr><td><strong>Message Bus</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>Redis Streams com pub/sub e task queue</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:90%"></div></div> 90%</td></tr>
+            <tr><td><strong>Agent Registry</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>Tracking de capabilities e health</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:85%"></div></div> 85%</td></tr>
+            <tr><td><strong>Orchestrator</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>Decomposição, routing, lifecycle management</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:85%"></div></div> 85%</td></tr>
+            <tr><td><strong>8 Agentes</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>Todos os 8 agentes com módulos auxiliares</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:85%"></div></div> 85%</td></tr>
+            <tr><td><strong>Context System</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>Geração, reconstrução, loading e integração</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill" style="width:95%"></div></div> 95%</td></tr>
+            <tr><td><strong>API Gateway</strong></td><td><span class="status"><span class="status-dot orange"></span> Parcial</span></td><td>Estrutura definida, implementação stub</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill orange" style="width:75%"></div></div> 75%</td></tr>
+            <tr><td><strong>Testes</strong></td><td><span class="status"><span class="status-dot orange"></span> Parcial</span></td><td>Apenas test_orchestrator.py existente</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill orange" style="width:30%"></div></div> 30%</td></tr>
+            <tr><td><strong>Docker</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>docker-compose.yml completo com 5 services</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:80%"></div></div> 80%</td></tr>
+            <tr><td><strong>Backup System</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>Auto-backup, logs, cleanup, auto-start</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:100%"></div></div> 100%</td></tr>
+            <tr><td><strong>Documentation</strong></td><td><span class="status"><span class="status-dot green"></span> Implementado</span></td><td>README, ARCHITECTURE, CONTRIBUTING, Context docs</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill green" style="width:85%"></div></div> 85%</td></tr>
+            <tr><td><strong>Monitoring</strong></td><td><span class="status"><span class="status-dot yellow"></span> Configurado</span></td><td>Prometheus/Grafana via Docker, config pronta</td><td><div class="progress-bar" style="width:120px;display:inline-block;vertical-align:middle"><div class="progress-fill purple" style="width:60%"></div></div> 60%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 14. Roadmap Automático -->
+    <section id="roadmap">
+      <h2><span class="sec-icon">→</span> Roadmap Automático</h2>
+      <p>Roteiro gerado automaticamente com base no estado atual do projeto. Priorizado por impacto e dependências.</p>
+
+      <h3>Fase 1 - Fundação (Completa)</h3>
+      <div class="progress-container">
+        <div class="progress-label"><span>100%</span></div>
+        <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Tarefa</th><th>Status</th><th>Arquivos</th></tr></thead>
+          <tbody>
+            <tr><td>Core infrastructure (system, message_bus, registry)</td><td><span class="chip green">Completo</span></td><td><code>src/core/*</code></td></tr>
+            <tr><td>8 agentes com módulos auxiliares</td><td><span class="chip green">Completo</span></td><td><code>src/agents/*</code></td></tr>
+            <tr><td>Configuração do sistema</td><td><span class="chip green">Completo</span></td><td><code>config/*</code></td></tr>
+            <tr><td>Docker Compose com 5 services</td><td><span class="chip green">Completo</span></td><td><code>docker-compose.yml</code></td></tr>
+            <tr><td>Sistema de backup automático</td><td><span class="chip green">Completo</span></td><td><code>scripts/*</code></td></tr>
+            <tr><td>Context system completo</td><td><span class="chip green">Completo</span></td><td><code>context/*</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Fase 2 - Implementação Core (Em Progresso)</h3>
+      <div class="progress-container">
+        <div class="progress-label"><span>65%</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:65%"></div></div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Tarefa</th><th>Status</th><th>Prioridade</th></tr></thead>
+          <tbody>
+            <tr><td>Implementar BaseAgent com interface comum</td><td><span class="chip orange">Em Progresso</span></td><td><span class="chip red">Alta</span></td></tr>
+            <tr><td>Message Bus com Redis Streams real</td><td><span class="chip orange">Em Progresso</span></td><td><span class="chip red">Alta</span></td></tr>
+            <tr><td>Agent Registry com health checks</td><td><span class="chip orange">Em Progresso</span></td><td><span class="chip red">Alta</span></td></tr>
+            <tr><td>API Gateway com FastAPI endpoints</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip red">Alta</span></td></tr>
+            <tr><td>Task Router com scoring real</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip orange">Média</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Fase 3 - Integrações</h3>
+      <div class="progress-container">
+        <div class="progress-label"><span>30%</span></div>
+        <div class="progress-bar"><div class="progress-fill orange" style="width:30%"></div></div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Tarefa</th><th>Status</th><th>Prioridade</th></tr></thead>
+          <tbody>
+            <tr><td>Integração OpenAI/Anthropic APIs</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip red">Alta</span></td></tr>
+            <tr><td>LangChain para orquestração LLM</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip orange">Média</span></td></tr>
+            <tr><td>Vector store para knowledge base</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip orange">Média</span></td></tr>
+            <tr><td>Web search integration</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip yellow">Baixa</span></td></tr>
+            <tr><td>GitHub/GitLab integration</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip yellow">Baixa</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Fase 4 - Qualidade e Observabilidade</h3>
+      <div class="progress-container">
+        <div class="progress-label"><span>20%</span></div>
+        <div class="progress-bar"><div class="progress-fill orange" style="width:20%"></div></div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Tarefa</th><th>Status</th><th>Prioridade</th></tr></thead>
+          <tbody>
+            <tr><td>Testes unitários completos (>80% coverage)</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip red">Alta</span></td></tr>
+            <tr><td>Testes de integração</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip red">Alta</span></td></tr>
+            <tr><td>Prometheus metrics endpoints</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip orange">Média</span></td></tr>
+            <tr><td>Grafana dashboards</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip orange">Média</span></td></tr>
+            <tr><td>Structured logging com structlog</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip orange">Média</span></td></tr>
+            <tr><td>CI/CD pipeline (GitHub Actions)</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip yellow">Baixa</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Fase 5 - Produção</h3>
+      <div class="progress-container">
+        <div class="progress-label"><span>10%</span></div>
+        <div class="progress-bar"><div class="progress-fill orange" style="width:10%"></div></div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Tarefa</th><th>Status</th><th>Prioridade</th></tr></thead>
+          <tbody>
+            <tr><td>Autenticação JWT completa</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip red">Alta</span></td></tr>
+            <tr><td>Rate limiting avançado</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip orange">Média</span></td></tr>
+            <tr><td>Circuit breaker para agentes</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip orange">Média</span></td></tr>
+            <tr><td>Horizontal scaling (multi-instance)</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip yellow">Baixa</span></td></tr>
+            <tr><td>Kubernetes deployment</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip yellow">Baixa</span></td></tr>
+            <tr><td>Web dashboard para monitoramento</td><td><span class="chip yellow">Planejado</span></td><td><span class="chip yellow">Baixa</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Métricas do Roadmap</h3>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-value" style="font-size:18px;color:var(--accent-green)">12</div><div class="stat-label">Completos</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:18px;color:var(--accent-orange)">5</div><div class="stat-label">Em Progresso</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:18px;color:var(--accent-yellow)">18</div><div class="stat-label">Planejados</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:18px">35</div><div class="stat-label">Total</div></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#1a2744',
+    primaryTextColor: '#e4e4ed',
+    primaryBorderColor: '#5b8def',
+    lineColor: '#5b8def',
+    secondaryColor: '#122a1f',
+    tertiaryColor: '#1e1a2e',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    fontSize: '12px',
+    noteBkgColor: '#16161f',
+    noteTextColor: '#e4e4ed',
+    noteBorderColor: '#1e1e2e',
+    actorBkg: '#1a2744',
+    actorTextColor: '#e4e4ed',
+    actorBorder: '#5b8def',
+    signalColor: '#5b8def',
+    signalTextColor: '#e4e4ed',
+    labelBoxBkgColor: '#16161f',
+    labelTextColor: '#e4e4ed',
+    loopTextColor: '#e4e4ed',
+    activationBorderColor: '#5b8def',
+    activationBkgColor: '#1a2744',
+    sequenceNumberColor: '#e4e4ed'
+  },
+  flowchart: { curve: 'basis', htmlLabels: true },
+  sequence: { mirrorActors: false, messageAlign: 'center' }
+});
+
+// Sidebar active state
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.sidebar nav a');
+
+function updateActiveNav() {
+  let current = '';
+  sections.forEach(section => {
+    const top = section.offsetTop - 100;
+    if (window.scrollY >= top) current = section.getAttribute('id');
+  });
+  navLinks.forEach(link => {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === '#' + current) link.classList.add('active');
+  });
+}
+
+window.addEventListener('scroll', updateActiveNav);
+
+// Close sidebar on mobile when clicking a link
+navLinks.forEach(link => {
+  link.addEventListener('click', () => {
+    if (window.innerWidth <= 768) {
+      document.getElementById('sidebar').classList.remove('open');
+    }
+  });
+});
+</script>
+</body>
+</html>
