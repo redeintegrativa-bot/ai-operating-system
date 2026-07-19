@@ -317,11 +317,11 @@ code {
 
       <div class="stats-row">
         <div class="stat-card"><div class="stat-value">8</div><div class="stat-label">Agentes</div></div>
-        <div class="stat-card"><div class="stat-value">6</div><div class="stat-label">Core Modules</div></div>
-        <div class="stat-card"><div class="stat-value">8k+</div><div class="stat-label">Linhas de Código</div></div>
-        <div class="stat-card"><div class="stat-value">90+</div><div class="stat-label">Arquivos</div></div>
+        <div class="stat-card"><div class="stat-value">8</div><div class="stat-label">Core Modules</div></div>
+        <div class="stat-card"><div class="stat-value">9k+</div><div class="stat-label">Linhas de Código</div></div>
+        <div class="stat-card"><div class="stat-value">95+</div><div class="stat-label">Arquivos</div></div>
         <div class="stat-card"><div class="stat-value">13</div><div class="stat-label">API Endpoints</div></div>
-        <div class="stat-card"><div class="stat-value">129</div><div class="stat-label">Testes</div></div>
+        <div class="stat-card"><div class="stat-value">180+</div><div class="stat-label">Testes</div></div>
       </div>
 
       <h3>Princípios Fundamentais</h3>
@@ -1379,8 +1379,15 @@ graph TD
 │   ├── <span class="dir">core/</span>
 │   │   ├── <span class="file ext-py">__init__.py</span>
 │   │   ├── <span class="file ext-py">agent_registry.py</span>
+│   │   ├── <span class="file ext-py">events.py</span>
+│   │   ├── <span class="file ext-py">kernel.py</span> <span style="color:var(--accent-green)"># NEW: AgentManager, Heartbeat, Scheduler</span>
+│   │   ├── <span class="file ext-py">memory.py</span>
 │   │   ├── <span class="file ext-py">message_bus.py</span>
-│   │   └── <span class="file ext-py">system.py</span>
+│   │   ├── <span class="file ext-py">monitoring.py</span>
+│   │   ├── <span class="file ext-py">orchestrator.py</span>
+│   │   ├── <span class="file ext-py">suggestions.py</span> <span style="color:var(--accent-green)"># NEW: Suggestion Inbox</span>
+│   │   ├── <span class="file ext-py">system.py</span>
+│   │   └── <span class="file ext-py">task_manager.py</span>
 │   ├── <span class="dir">integrations/</span>
 │   │   ├── <span class="file ext-py">__init__.py</span>
 │   │   └── <span class="file ext-py">api_gateway.py</span>
