@@ -1,0 +1,128 @@
+{
+  "name": "browser-agent",
+  "version": "1.0.0",
+  "displayName": "Browser Agent",
+  "description": "AIOS plugin for headless web browsing, scraping, OCR, screenshots, file downloads, and web search with proxy rotation and session persistence.",
+  "author": "AI Operating System Contributors",
+  "license": "MIT",
+  "repository": "https://github.com/your-org/ai-operating-system",
+  "homepage": "https://github.com/your-org/ai-operating-system/tree/main/plugins/browser-agent",
+  "keywords": [
+    "browser",
+    "scraping",
+    "ocr",
+    "web-automation",
+    "playwright",
+    "proxy",
+    "aios",
+    "agent"
+  ],
+  "engines": {
+    "aios": ">=1.0.0",
+    "python": ">=3.10"
+  },
+  "dependencies": {
+    "python": {
+      "required": [
+        "requests>=2.31.0",
+        "beautifulsoup4>=4.12.0",
+        "pysocks>=1.7.1"
+      ],
+      "optional": {
+        "playwright": {
+          "description": "Required for JavaScript-rendered pages, screenshots, and advanced browsing",
+          "install": "pip install playwright && playwright install chromium"
+        },
+        "pytesseract": {
+          "description": "Tesseract OCR backend for text extraction from images/PDFs",
+          "install": "pip install pytesseract && apt-get install -y tesseract-ocr"
+        },
+        "easyocr": {
+          "description": "EasyOCR backend for text extraction",
+          "install": "pip install easyocr"
+        },
+        "paddleocr": {
+          "description": "PaddleOCR backend for text extraction",
+          "install": "pip install paddleocr paddlepaddle"
+        },
+        "pdf2image": {
+          "description": "PDF to image conversion for OCR",
+          "install": "pip install pdf2image && apt-get install -y poppler-utils"
+        }
+      }
+    }
+  },
+  "aios": {
+    "agent": "browser_agent",
+    "module": "src.agents.browser_agent",
+    "capabilities": [
+      "browse",
+      "scrape",
+      "ocr",
+      "screenshot",
+      "download",
+      "search",
+      "extract_json"
+    ],
+    "registerWith": "orchestrator"
+  },
+  "configuration": {
+    "ocr_backend": {
+      "type": "string",
+      "default": "auto",
+      "enum": ["auto", "tesseract", "easyocr", "paddleocr"],
+      "description": "OCR engine to use. 'auto' tries tesseract > easyocr > paddleocr."
+    },
+    "proxy_rotation": {
+      "type": "string",
+      "default": "round_robin",
+      "enum": ["round_robin", "random"],
+      "description": "Proxy rotation strategy."
+    },
+    "proxy_max_failures": {
+      "type": "integer",
+      "default": 3,
+      "description": "Max failures before marking a proxy as unusable."
+    },
+    "session_expiration": {
+      "type": "integer",
+      "default": 86400,
+      "description": "Default session TTL in seconds (24 hours)."
+    },
+    "session_storage_dir": {
+      "type": "string",
+      "default": "sessions",
+      "description": "Directory for session JSON files."
+    },
+    "user_agent": {
+      "type": "string",
+      "default": "Mozilla/5.0 (compatible; AIOSSrowserAgent/1.0)",
+      "description": "User-Agent header for HTTP requests."
+    },
+    "request_timeout": {
+      "type": "integer",
+      "default": 30,
+      "description": "HTTP request timeout in seconds."
+    },
+    "playwright_headless": {
+      "type": "boolean",
+      "default": true,
+      "description": "Run Playwright in headless mode."
+    }
+  },
+  "installation": {
+    "quick": "pip install -r requirements.txt && pip install playwright && playwright install chromium",
+    "full": "pip install -r requirements.txt && pip install playwright pytesseract easyocr pdf2image && playwright install chromium && apt-get install -y tesseract-ocr poppler-utils",
+    "minimal": "pip install -r requirements.txt"
+  },
+  "examples": [
+    "examples/basic_browse.py",
+    "examples/scraper.py",
+    "examples/ocr_extract.py",
+    "examples/proxy_usage.py",
+    "examples/session_persistence.py",
+    "examples/web_search.py"
+  ],
+  "changelog": "CHANGELOG.md",
+  "readme": "README.md"
+}
