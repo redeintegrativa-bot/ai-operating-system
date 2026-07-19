@@ -1,0 +1,22 @@
+# Backup Service Cron Configuration
+# ===================================
+# Copy relevant entries to your crontab: crontab -e
+# Or install as a system-wide cron: sudo cp this_file /etc/cron.d/backup-service
+
+# --- Option 1: Auto-start on every reboot (recommended) ---
+# Runs at system boot to ensure the backup daemon is running.
+@reboot /root/ai-operating-system/scripts/start_backup_service.sh >> /root/ai-operating-system/logs/cron.log 2>&1
+
+# --- Option 2: Periodic health check (safety net) ---
+# Restarts the service if it died for any reason. Runs every 5 minutes.
+*/5 * * * * /root/ai-operating-system/scripts/start_backup_service.sh >> /root/ai-operating-system/logs/cron.log 2>&1
+
+# --- Option 3: Daily commit (use if polling/inotify is disabled) ---
+# 0 2 * * * cd /root/ai-operating-system && git add . && git commit -m "Daily backup: $(date +\%Y-\%m-\%d)" && git push
+
+# --- Notes ---
+# - The start_backup_service.sh script is idempotent: it checks if the
+#   service is already running before starting it.
+# - Logs are written to /root/ai-operating-system/logs/cron.log
+# - Adjust paths if your installation directory differs.
+# - Ensure the script is executable: chmod +x scripts/start_backup_service.sh

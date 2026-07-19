@@ -204,6 +204,57 @@ The system exposes a REST API through the API gateway:
 | `/api/v1/agents/:name/health` | GET | Agent health check |
 | `/api/v1/system/health` | GET | System health status |
 
+## Auto-Start Backup Service
+
+The backup daemon (`auto_backup.sh`) monitors your project for changes and auto-commits/pushes them. An auto-start wrapper ensures it runs at login or boot.
+
+### Quick Start
+
+```bash
+# Start manually (checks if already running)
+./scripts/start_backup_service.sh
+
+# The service is also auto-started on interactive login via .bashrc
+```
+
+### How It Works
+
+1. **`start_backup_service.sh`** — Wrapper that checks for an existing process before starting the daemon. Safe to run multiple times (idempotent).
+2. **`.bashrc` entry** — On first interactive login (`$SHLVL=1`), the service is started automatically.
+3. **Cron (optional)** — For system-level auto-start at boot or periodic health checks, see `config/backup_cron.example`.
+
+### Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `BACKUP_PROJECT_DIR` | Directory to monitor | Parent of `scripts/` |
+| `BACKUP_INTERVAL` | Poll interval (seconds) | `30` |
+| `BACKUP_BRANCH` | Branch to push | Auto-detect |
+| `BACKUP_USE_INOTIFY` | Use inotify (`1`/`0`/`auto`) | `auto` |
+
+### Managing the Service
+
+```bash
+# Check status
+./scripts/auto_backup.sh --status
+
+# Stop the daemon
+./scripts/auto_backup.sh --stop
+
+# Restart
+./scripts/auto_backup.sh --stop && ./scripts/start_backup_service.sh
+```
+
+### Cron Setup (Optional)
+
+```bash
+# Install the cron examples
+crontab -e
+# Uncomment desired entries from config/backup_cron.example
+```
+
+See [`config/backup_cron.example`](config/backup_cron.example) for available cron configurations.
+
 ## Testing
 
 ```bash
