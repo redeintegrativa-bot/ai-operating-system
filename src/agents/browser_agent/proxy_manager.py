@@ -115,7 +115,7 @@ class ProxyManager:
             # Handle socks5h:// which is common
             url = proxy_url
             if url.startswith("socks5h://"):
-                url = "socks5://" + url[9:]
+                url = "socks5://" + url[10:]
             
             # Determine protocol first
             scheme = url.split("://")[0].lower() if "://" in url else ""
