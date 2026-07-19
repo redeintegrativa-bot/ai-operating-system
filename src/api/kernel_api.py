@@ -275,6 +275,8 @@ def generate_api_json(api: KernelAPI, endpoint: str, **kwargs) -> str:
         "dashboard": lambda: api.get_dashboard_data(),
         "scheduled_missions": lambda: api.list_scheduled_missions(),
         "due_missions": lambda: api.get_due_missions(),
+        "browser": lambda: api.get_browser_agent(),
+        "browser_memories": lambda: api.get_browser_memories(kwargs.get("query")),
     }
     
     handler = methods.get(endpoint)
@@ -295,7 +297,8 @@ def main():
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--endpoint", default="dashboard",
                        choices=["agents", "suggestions", "kernel_status", 
-                               "dashboard", "scheduled_missions", "due_missions"])
+                               "dashboard", "scheduled_missions", "due_missions",
+                               "browser", "browser_memories"])
     args = parser.parse_args()
     
     api = KernelAPI(args.project_root)

@@ -447,7 +447,7 @@ class TestCreateDefaultKernel:
         agents = kernel.agent_manager.get_all()
         names = {a.name for a in agents}
         expected = {"orchestrator", "architect", "engineer", "researcher",
-                     "ai_specialist", "automation", "database", "security"}
+                     "ai_specialist", "automation", "database", "security", "browser"}
         assert names == expected
 
     def test_default_agent_configs(self, tmp_project):
@@ -460,4 +460,36 @@ class TestCreateDefaultKernel:
         kernel = create_default_kernel(tmp_project)
         config_dir = kernel.agent_manager._config_dir
         files = os.listdir(config_dir)
-        assert len(files) == 8
+        assert len(files) == 9
+
+
+class TestBrowserAgentInKernel:
+    def test_browser_agent_registered(self, tmp_project):
+        kernel = create_default_kernel(tmp_project)
+        config = kernel.agent_manager.get("browser")
+        assert config is not None
+        assert config.name == "browser"
+
+    def test_browser_agent_mode(self, tmp_project):
+        kernel = create_default_kernel(tmp_project)
+        config = kernel.agent_manager.get("browser")
+        assert config.mode == AgentMode.AUTONOMOUS
+
+    def test_browser_agent_capabilities(self, tmp_project):
+        kernel = create_default_kernel(tmp_project)
+        config = kernel.agent_manager.get("browser")
+        assert "browser" in config.capabilities
+        assert "scrape" in config.capabilities
+        assert "ocr" in config.capabilities
+        assert "screenshot" in config.capabilities
+
+    def test_browser_agent_domain(self, tmp_project):
+        kernel = create_default_kernel(tmp_project)
+        config = kernel.agent_manager.get("browser")
+        assert config.domain == "web browsing and scraping"
+
+    def test_browser_agent_metadata(self, tmp_project):
+        kernel = create_default_kernel(tmp_project)
+        config = kernel.agent_manager.get("browser")
+        assert config.metadata.get("supports_playwright") is True
+        assert config.metadata.get("supports_ocr") is True
