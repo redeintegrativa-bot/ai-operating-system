@@ -11,7 +11,7 @@ Pages.Finances = {
     { id: 3, date: '2026-07-17', description: 'Agent Marketplace — SecurityGuard', type: 'expense', amount: -49.99, status: 'completed' },
     { id: 4, date: '2026-07-15', description: 'Budget Allocation — Monthly', type: 'income', amount: 15000.00, status: 'completed' },
     { id: 5, date: '2026-07-14', description: 'API Usage — Anthropic Claude', type: 'expense', amount: -312.50, status: 'completed' },
-    { id: 6, date: '2026-2026-07-12', description: 'Database — PostgreSQL Cloud', type: 'expense', amount: -75.00, status: 'completed' },
+    { id: 6, date: '2026-07-12', description: 'Database — PostgreSQL Cloud', type: 'expense', amount: -75.00, status: 'completed' },
     { id: 7, date: '2026-07-10', description: 'CDN — CloudFlare Pro', type: 'expense', amount: -20.00, status: 'completed' },
     { id: 8, date: '2026-07-08', description: 'Monitoring — Datadog', type: 'expense', amount: -99.00, status: 'completed' }
   ],
