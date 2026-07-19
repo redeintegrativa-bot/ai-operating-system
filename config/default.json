@@ -120,6 +120,11 @@
       "enabled": true,
       "priority": 3,
       "capabilities": ["workflow_automation", "ci_cd", "deployment", "scheduling"]
+    },
+    "browser_agent": {
+      "enabled": true,
+      "priority": 3,
+      "capabilities": ["browse", "scrape", "web", "ocr", "screenshot", "download", "search", "extract_json"]
     }
   }
 }
