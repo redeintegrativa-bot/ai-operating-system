@@ -1,0 +1,11 @@
+[
+  {
+    "task_id": "71441e47-c304-4b1e-92aa-d70321a9f0da",
+    "action": "created",
+    "timestamp": "2026-07-19T04:37:41.045938",
+    "details": {
+      "description": "Test task",
+      "priority": "HIGH"
+    }
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "71441e47-c304-4b1e-92aa-d70321a9f0da": {
+    "id": "71441e47-c304-4b1e-92aa-d70321a9f0da",
+    "description": "Test task",
+    "status": "created",
+    "priority": 3,
+    "created_at": "2026-07-19T04:37:41.045742",
+    "updated_at": "2026-07-19T04:37:41.045742",
+    "assigned_agent": null,
+    "result": null,
+    "errors": [],
+    "metadata": {},
+    "deadline": null,
+    "dependencies": [],
+    "retry_count": 0,
+    "max_retries": 3,
+    "timeout_seconds": null
+  }
+}
