@@ -1280,3 +1280,296 @@ class TestEdgeCases:
         assert status["name"] == "browser_agent"
         assert status["status"] == "idle"
         assert isinstance(status["capabilities"], list)
+
+
+# ---------------------------------------------------------------------------
+# SessionManager
+# ---------------------------------------------------------------------------
+
+class TestSessionManagerInit:
+    def test_created_with_dir(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=os.path.join(tmp_project, "sessions"))
+        assert os.path.isdir(os.path.join(tmp_project, "sessions"))
+
+    def test_custom_expiration(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project, default_expiration=3600)
+        assert sm._default_expiration == 3600
+
+
+class TestSessionSaveLoad:
+    def test_save_and_load(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        ok = sm.save_session("test1", cookies=[{"name": "c", "value": "v"}])
+        assert ok is True
+        data = sm.load_session("test1")
+        assert data is not None
+        assert data["name"] == "test1"
+        assert len(data["cookies"]) == 1
+        assert data["cookies"][0]["name"] == "c"
+
+    def test_load_nonexistent(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        assert sm.load_session("nope") is None
+
+    def test_save_local_storage(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        sm.save_session("ls1", local_storage={"k1": "v1", "k2": "v2"})
+        data = sm.load_session("ls1")
+        assert data["local_storage"] == {"k1": "v1", "k2": "v2"}
+
+    def test_save_session_storage(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        sm.save_session("ss1", session_storage={"sk": "sv"})
+        data = sm.load_session("ss1")
+        assert data["session_storage"] == {"sk": "sv"}
+
+    def test_save_metadata(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        sm.save_session("m1", metadata={"source": "test"})
+        data = sm.load_session("m1")
+        assert data["metadata"]["source"] == "test"
+
+    def test_update_session(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        sm.save_session("u1", cookies=[{"name": "a", "value": "1"}])
+        ok = sm.update_session("u1", cookies=[{"name": "b", "value": "2"}])
+        assert ok is True
+        data = sm.load_session("u1")
+        assert data["cookies"][0]["name"] == "b"
+
+    def test_update_nonexistent(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        assert sm.update_session("ghost") is False
+
+
+class TestSessionExpiration:
+    def test_expired_session_returns_none(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project, default_expiration=0)
+        sm.save_session("exp1", cookies=[{"name": "x", "value": "y"}])
+        import time
+        time.sleep(0.05)
+        assert sm.load_session("exp1") is None
+
+    def test_delete_expired_file(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project, default_expiration=0)
+        sm.save_session("exp2")
+        import time
+        time.sleep(0.05)
+        assert sm.load_session("exp2") is None
+        path = os.path.join(tmp_project, "exp2.json")
+        assert not os.path.exists(path)
+
+
+class TestSessionDelete:
+    def test_delete_session(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        sm.save_session("del1")
+        assert sm.delete_session("del1") is True
+        assert sm.load_session("del1") is None
+        assert not os.path.exists(os.path.join(tmp_project, "del1.json"))
+
+    def test_delete_nonexistent(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        assert sm.delete_session("ghost") is True
+
+
+class TestSessionList:
+    def test_list_sessions(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        sm.save_session("a1")
+        sm.save_session("a2")
+        sessions = sm.list_sessions()
+        names = {s["name"] for s in sessions}
+        assert "a1" in names
+        assert "a2" in names
+
+    def test_list_empty(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        assert sm.list_sessions() == []
+
+
+class TestSessionCleanup:
+    def test_cleanup_removes_expired(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project, default_expiration=0)
+        sm.save_session("old1")
+        sm.save_session("old2")
+        import time
+        time.sleep(0.05)
+        removed = sm.cleanup_expired()
+        assert removed == 2
+
+    def test_cleanup_keeps_valid(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project, default_expiration=3600)
+        sm.save_session("keep1")
+        removed = sm.cleanup_expired()
+        assert removed == 0
+        assert sm.load_session("keep1") is not None
+
+
+class TestSessionPlaywrightHelpers:
+    def test_save_playwright_state(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+
+        mock_context = MagicMock()
+        mock_context.cookies.return_value = [
+            {"name": "tok", "value": "abc123", "domain": ".example.com", "path": "/"}
+        ]
+        mock_page = MagicMock()
+        mock_page.evaluate.return_value = {"lang": "en"}
+        mock_context.pages = [mock_page]
+
+        ok = sm.save_playwright_state("pw1", mock_context, url="https://example.com")
+        assert ok is True
+        data = sm.load_session("pw1")
+        assert data["cookies"][0]["name"] == "tok"
+        assert data["local_storage"]["lang"] == "en"
+
+    def test_restore_playwright_state(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        sm.save_session(
+            "pw2",
+            cookies=[{"name": "x", "value": "y", "domain": "", "path": "/"}],
+        )
+
+        mock_context = MagicMock()
+        mock_page = MagicMock()
+        mock_page.evaluate.return_value = None
+        mock_context.pages = [mock_page]
+
+        ok = sm.restore_playwright_state("pw2", mock_context)
+        assert ok is True
+        mock_context.add_cookies.assert_called_once()
+
+    def test_restore_nonexistent_returns_false(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        mock_context = MagicMock()
+        assert sm.restore_playwright_state("nope", mock_context) is False
+
+
+class TestSessionRequestsHelpers:
+    def test_save_requests_cookies(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+
+        mock_jar = MagicMock()
+        mock_jar.__iter__ = lambda self: iter(
+            [MagicMock(name="sid", value="abc", domain=".example.com", path="/")]
+        )
+
+        ok = sm.save_requests_cookies("req1", mock_jar)
+        assert ok is True
+        data = sm.load_session("req1")
+        assert len(data["cookies"]) == 1
+
+    def test_restore_requests_cookies(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        sm.save_session(
+            "req2",
+            cookies=[{"name": "tok", "value": "123", "domain": ".ex.com", "path": "/"}],
+        )
+
+        mock_session = MagicMock()
+        ok = sm.restore_requests_cookies("req2", mock_session)
+        assert ok is True
+        mock_session.cookies.set.assert_called_once()
+
+    def test_restore_requests_nonexistent(self, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project)
+        mock_session = MagicMock()
+        assert sm.restore_requests_cookies("nope", mock_session) is False
+
+
+# ---------------------------------------------------------------------------
+# BrowserAgent Session Integration
+# ---------------------------------------------------------------------------
+
+class TestBrowserAgentSessionIntegration:
+    def test_agent_has_session_manager(self, agent):
+        from src.agents.browser_agent.session_manager import SessionManager
+        assert isinstance(agent._session_manager, SessionManager)
+
+    def test_set_session_manager(self, agent):
+        from src.agents.browser_agent.session_manager import SessionManager
+        new_sm = SessionManager(storage_dir="/tmp/test_sessions")
+        agent.set_session_manager(new_sm)
+        assert agent.get_session_manager() is new_sm
+
+    def test_browse_with_session_playwright(self, agent, tmp_project):
+        mock_page = MagicMock()
+        mock_page.content.return_value = "<html><head><title>S</title></head></html>"
+        mock_page.title.return_value = "S"
+        mock_page.evaluate.return_value = {}
+        mock_context = MagicMock()
+        mock_context.new_page.return_value = mock_page
+        mock_context.pages = [mock_page]
+        mock_context.cookies.return_value = []
+
+        mock_browser = MagicMock()
+        mock_browser.new_context.return_value = mock_context
+
+        agent._playwright_available = True
+        agent._browser = mock_browser
+
+        result = agent.execute({
+            "type": "browse",
+            "url": "https://example.com",
+            "session": "my_session",
+        })
+        assert result.success is True
+        assert result.output["title"] == "S"
+        # Session should have been saved
+        sm = agent.get_session_manager()
+        data = sm.load_session("my_session")
+        assert data is not None
+
+    def test_browse_with_session_requests(self, agent):
+        mock_requests, mock_bs4, mock_resp, mock_soup = _make_requests_bs4_mock(
+            response_text="<html><head><title>T</title></head></html>"
+        )
+        mock_soup.title.string = "T"
+        mock_resp.cookies = {}
+
+        with patch.dict("sys.modules", {"requests": mock_requests, "bs4": mock_bs4}):
+            result = agent.execute({
+                "type": "browse",
+                "url": "https://example.com",
+                "session": "req_session",
+            })
+        assert result.success is True
+
+    def test_stop_cleans_expired_sessions(self, agent, tmp_project):
+        from src.agents.browser_agent.session_manager import SessionManager
+        sm = SessionManager(storage_dir=tmp_project, default_expiration=0)
+        agent.set_session_manager(sm)
+        sm.save_session("dead")
+        import time
+        time.sleep(0.05)
+        agent.stop()
+        assert sm.load_session("dead") is None
+
+    def test_get_session_name_from_task(self, agent):
+        assert agent._get_session_name({"session": "s1"}) == "s1"
+        assert agent._get_session_name({"session_name": "s2"}) == "s2"
+        assert agent._get_session_name({}) is None
