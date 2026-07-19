@@ -395,13 +395,13 @@ class TestAIOSKernel:
         assert isinstance(kernel.scheduler, Scheduler)
 
     def test_get_agent_manager(self, kernel):
-        assert kernel.get_agent_manager() is kernel.agent_manager
+        assert kernel.agent_manager is kernel.agent_manager
 
     def test_get_heartbeat_monitor(self, kernel):
-        assert kernel.get_heartbeat_monitor() is kernel.heartbeat
+        assert kernel.heartbeat is kernel.heartbeat
 
     def test_get_scheduler(self, kernel):
-        assert kernel.get_scheduler() is kernel.scheduler
+        assert kernel.scheduler is kernel.scheduler
 
     def test_set_orchestrator(self, kernel):
         kernel.set_orchestrator("orchestrator")
