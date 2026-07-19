@@ -196,6 +196,74 @@ class KernelAPI:
             "stale_agents": kernel_status.get("stale_agents", []),
         }
 
+    # ---- Browser Agent Endpoints ----
+
+    def get_browser_agent(self) -> Dict[str, Any]:
+        """Get browser agent status and configuration."""
+        config = self.kernel.agent_manager.get("browser")
+        if not config:
+            return {"error": "Browser agent not registered"}
+        hb = self.kernel.heartbeat.get("browser")
+        orch_agent = self.orchestrator.agents.get("browser")
+        return {
+            **config.to_dict(),
+            "heartbeat": {
+                "status": hb.status if hb else "unknown",
+                "timestamp": hb.timestamp if hb else None,
+                "active_tasks": hb.active_tasks if hb else 0,
+            },
+            "tasks_completed": orch_agent.tasks_completed if orch_agent else 0,
+            "tasks_failed": orch_agent.tasks_failed if orch_agent else 0,
+        }
+
+    def execute_browser_task(self, task_type: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute a browser agent task (browse, scrape, ocr, screenshot, download, search, extract_json)."""
+        valid_types = {"browse", "scrape", "ocr", "screenshot", "download", "search", "extract_json"}
+        if task_type not in valid_types:
+            return {"success": False, "error": f"Invalid task type: {task_type}. Valid: {sorted(valid_types)}"}
+        try:
+            agent = create_agent("browser", self.project_root)
+            task = {"type": task_type, **params}
+            result = agent.execute(task)
+            return {
+                "success": result.success,
+                "output": result.output,
+                "errors": result.errors,
+                "execution_time": result.execution_time,
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def schedule_browser_task(self, name: str, task_type: str, params: Dict[str, Any],
+                              interval_seconds: float = 3600, enabled: bool = True) -> Dict[str, Any]:
+        """Schedule a recurring browser task."""
+        mission = ScheduledMission(
+            name=name,
+            agent_name="browser",
+            description=f"Browser task: {task_type}",
+            interval_seconds=interval_seconds,
+            enabled=enabled,
+            task_template={"type": task_type, **params},
+        )
+        mission_id = self.kernel.scheduler.add_mission(mission)
+        return {"success": True, "id": mission_id, "name": name, "task_type": task_type}
+
+    def get_browser_memories(self, query: Optional[str] = None) -> Dict[str, Any]:
+        """Get browser agent memories (scrape results, OCR results, etc.)."""
+        try:
+            from src.core.memory import MemorySystem
+            memory = MemorySystem(self.project_root)
+            if query:
+                results = memory.search_memories(query, agent_name="browser_agent")
+            else:
+                results = memory.get_memories("browser_agent")
+            return {
+                "memories": [m.to_dict() for m in results],
+                "total": len(results),
+            }
+        except Exception as e:
+            return {"memories": [], "total": 0, "error": str(e)}
+
 
 def generate_api_json(api: KernelAPI, endpoint: str, **kwargs) -> str:
     """Generate JSON response for an API endpoint."""

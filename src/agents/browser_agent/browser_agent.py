@@ -294,10 +294,9 @@ class BrowserAgent(BaseAgent):
             page.screenshot(path=filename, full_page=full_page)
             page.close()
 
-            return AgentResult(
-                success=True,
-                output={"url": url, "file_path": filename, "full_page": full_page},
-            )
+            output = {"url": url, "file_path": filename, "full_page": full_page}
+            self._store_result("screenshot", output, keywords=["screenshot", "capture", url])
+            return AgentResult(success=True, output=output)
         except Exception as e:
             logger.error(f"Screenshot failed: {e}")
             return AgentResult(success=False, output=None, errors=[str(e)])
@@ -330,15 +329,14 @@ class BrowserAgent(BaseAgent):
                     f.write(chunk)
 
             file_size = os.path.getsize(output_path)
-            return AgentResult(
-                success=True,
-                output={
-                    "url": url,
-                    "file_path": output_path,
-                    "file_size": file_size,
-                    "content_type": response.headers.get("content-type", "unknown"),
-                },
-            )
+            output = {
+                "url": url,
+                "file_path": output_path,
+                "file_size": file_size,
+                "content_type": response.headers.get("content-type", "unknown"),
+            }
+            self._store_result("download", output, keywords=["download", "file", url])
+            return AgentResult(success=True, output=output)
         except Exception as e:
             logger.error(f"Download failed: {e}")
             return AgentResult(success=False, output=None, errors=[str(e)])
@@ -399,7 +397,9 @@ class BrowserAgent(BaseAgent):
                             "snippet": snippet_el.get_text(strip=True) if snippet_el else "",
                         })
 
-            return AgentResult(success=True, output={"query": query, "results": results})
+            output = {"query": query, "results": results}
+            self._store_result("search", output, keywords=["search", query])
+            return AgentResult(success=True, output=output)
         except Exception as e:
             logger.error(f"Playwright search failed: {e}")
             return AgentResult(success=False, output=None, errors=[str(e)])
@@ -428,7 +428,9 @@ class BrowserAgent(BaseAgent):
                         "snippet": snippet_el.get_text(strip=True) if snippet_el else "",
                     })
 
-            return AgentResult(success=True, output={"query": query, "results": results})
+            output = {"query": query, "results": results}
+            self._store_result("search", output, keywords=["search", query])
+            return AgentResult(success=True, output=output)
         except Exception as e:
             logger.error(f"Search failed: {e}")
             return AgentResult(success=False, output=None, errors=[str(e)])
@@ -469,14 +471,13 @@ class BrowserAgent(BaseAgent):
             for key, sel in selectors.items():
                 extracted[key] = self._scraper.extract_by_selector(html_content, sel)
 
-        return AgentResult(
-            success=True,
-            output={
-                "url": url,
-                "structured_data": structured,
-                "extracted": extracted if extracted else None,
-            },
-        )
+        output = {
+            "url": url,
+            "structured_data": structured,
+            "extracted": extracted if extracted else None,
+        }
+        self._store_result("extract_json", output, keywords=["extract", "json", url])
+        return AgentResult(success=True, output=output)
 
     def stop(self):
         """Clean up playwright resources."""
