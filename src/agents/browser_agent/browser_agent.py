@@ -151,14 +151,16 @@ class BrowserAgent(BaseAgent):
         extract_links = task.get("extract_links", False)
         extract_images = task.get("extract_images", False)
         extract_meta = task.get("extract_meta", False)
+        proxy = self._get_proxy_from_task(task)
 
         if self._ensure_playwright():
-            return self._browse_with_playwright(url, extract_links, extract_images, extract_meta)
-        return self._browse_with_requests(url, extract_links, extract_images, extract_meta)
+            return self._browse_with_playwright(url, extract_links, extract_images, extract_meta, proxy)
+        return self._browse_with_requests(url, extract_links, extract_images, extract_meta, proxy)
 
-    def _browse_with_playwright(self, url: str, extract_links: bool, extract_images: bool, extract_meta: bool) -> AgentResult:
+    def _browse_with_playwright(self, url: str, extract_links: bool, extract_images: bool, extract_meta: bool, proxy: Optional[ProxyInfo] = None) -> AgentResult:
         """Browse using playwright for JS-rendered pages."""
         try:
+            proxy_config = self._proxy_manager.get_playwright_proxy(proxy)
             page = self._browser.new_page()
             page.goto(url, wait_until="domcontentloaded", timeout=30000)
             page.wait_for_timeout(2000)
@@ -184,6 +186,8 @@ class BrowserAgent(BaseAgent):
             self._store_result("browse", result, keywords=["browse", "webpage", url])
             return AgentResult(success=True, output=result)
         except Exception as e:
+            if proxy:
+                self._proxy_manager.mark_failed(proxy)
             logger.error(f"Playwright browse failed: {e}")
             return AgentResult(success=False, output=None, errors=[str(e)])
 
@@ -290,12 +294,13 @@ class BrowserAgent(BaseAgent):
         url = task.get("url", "")
         lang = task.get("lang", "eng")
         preprocess = task.get("preprocess", None)
+        proxy = self._get_proxy_from_task(task)
 
         if not file_path and not url:
             return AgentResult(success=False, output=None, errors=["No file_path or URL provided"])
 
         if url and not file_path:
-            file_path = self._download_file(url)
+            file_path = self._download_file(url, proxy)
             if not file_path:
                 return AgentResult(success=False, output=None, errors=[f"Failed to download file from {url}"])
 
@@ -519,6 +524,7 @@ class BrowserAgent(BaseAgent):
         url = task.get("url", "")
         html_content = task.get("html", "")
         selectors = task.get("selectors", {})
+        proxy = self._get_proxy_from_task(task)
 
         if not html_content and not url:
             return AgentResult(success=False, output=None, errors=["No URL or HTML content provided"])
@@ -526,6 +532,7 @@ class BrowserAgent(BaseAgent):
         if not html_content:
             if self._ensure_playwright():
                 try:
+                    proxy_config = self._proxy_manager.get_playwright_proxy(proxy)
                     page = self._browser.new_page()
                     page.goto(url, wait_until="domcontentloaded", timeout=30000)
                     page.wait_for_timeout(2000)
@@ -537,10 +544,15 @@ class BrowserAgent(BaseAgent):
                 try:
                     import requests
                     headers = {"User-Agent": "Mozilla/5.0 (compatible; AIOSSrowserAgent/1.0)"}
-                    resp = requests.get(url, headers=headers, timeout=30)
+                    proxies = self._proxy_manager.get_request_proxies(proxy)
+                    resp = requests.get(url, headers=headers, timeout=30, proxies=proxies)
                     resp.raise_for_status()
+                    if proxy:
+                        self._proxy_manager.mark_success(proxy)
                     html_content = resp.text
                 except Exception as e:
+                    if proxy:
+                        self._proxy_manager.mark_failed(proxy)
                     return AgentResult(success=False, output=None, errors=[f"Failed to fetch page: {e}"])
 
         structured = self._scraper.extract_json(html_content)
