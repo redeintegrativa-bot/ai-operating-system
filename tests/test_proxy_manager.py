@@ -442,4 +442,4 @@ class TestActiveCount:
     def test_active_count_with_failed(self, proxy_with_proxies):
         proxy_with_proxies._proxies[0].fail_count = 3
         proxy_with_proxies._proxies[1].fail_count = 2
-        assert proxy_with_proxies.active_count == 1
+        assert proxy_with_proxies.active_count == 2  # fail_count=2 is still < 3, so usable

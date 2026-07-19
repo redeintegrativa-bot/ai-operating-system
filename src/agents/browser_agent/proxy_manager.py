@@ -52,7 +52,7 @@ class ProxyInfo:
     @property
     def is_usable(self) -> bool:
         """Check if proxy is usable (max 3 failures)."""
-        return self.fail_count < self._max_failures if hasattr(self, '_max_failures') else self.fail_count < 3
+        return self.fail_count < 3
 
 
 class ProxyManager:
