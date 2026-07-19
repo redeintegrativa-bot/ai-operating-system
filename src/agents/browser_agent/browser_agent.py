@@ -51,6 +51,40 @@ class BrowserAgent(BaseAgent):
             logger.debug("Stored %s result in memory", task_type)
         except Exception as e:
             logger.warning("Failed to store result in memory: %s", e)
+    
+    def _get_proxy_from_task(self, task: Dict) -> Optional[ProxyInfo]:
+        """Get proxy from task parameters if specified."""
+        proxy_config = task.get("proxy")
+        if proxy_config is None:
+            return None
+        
+        # If it's a proxy URL string, parse it
+        if isinstance(proxy_config, str):
+            return self._proxy_manager._parse_proxy(proxy_config)
+        
+        # If it's already a ProxyInfo, return it
+        if isinstance(proxy_config, ProxyInfo):
+            return proxy_config
+        
+        # If it's a dict, create ProxyInfo
+        if isinstance(proxy_config, Dict):
+            from .proxy_manager import ProxyProtocol
+            protocol_map = {
+                "http": ProxyProtocol.HTTP,
+                "https": ProxyProtocol.HTTP,
+                "socks4": ProxyProtocol.SOCKS4,
+                "socks5": ProxyProtocol.SOCKS5,
+            }
+            protocol = protocol_map.get(proxy_config.get("protocol", "http"), ProxyProtocol.HTTP)
+            return ProxyInfo(
+                protocol=protocol,
+                host=proxy_config.get("host", ""),
+                port=proxy_config.get("port", 0),
+                username=proxy_config.get("username"),
+                password=proxy_config.get("password"),
+            )
+        
+        return None
 
     def execute(self, task: Dict) -> AgentResult:
         task_type = task.get("type", "browse")
@@ -401,13 +435,14 @@ class BrowserAgent(BaseAgent):
         """Perform an automated web search and return results."""
         query = task.get("query", "")
         num_results = task.get("num_results", 5)
+        proxy = self._get_proxy_from_task(task)
 
         if not query:
             return AgentResult(success=False, output=None, errors=["No search query provided"])
 
         if self._ensure_playwright():
             return self._search_playwright(query, num_results)
-        return self._search_requests(query, num_results)
+        return self._search_requests(query, num_results, proxy)
 
     def _search_playwright(self, query: str, num_results: int) -> AgentResult:
         """Search using playwright."""
