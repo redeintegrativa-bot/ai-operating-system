@@ -1,0 +1,139 @@
+{
+  "metadata": {
+    "project_name": "ai-operating-system",
+    "project_root": "/root/ai-operating-system",
+    "generated_at": "2026-07-19T06:29:20.624563+00:00"
+  },
+  "structure": {
+    "total_files": 76,
+    "total_dirs": 23,
+    "total_lines": 5746,
+    "files_by_extension": {
+      ".py": 38,
+      ".md": 17,
+      ".sh": 6,
+      "(no ext)": 3,
+      ".json": 3,
+      ".example": 2,
+      ".log": 2,
+      ".yaml": 1,
+      ".conf": 1,
+      ".yml": 1,
+      ".pid": 1,
+      ".txt": 1
+    },
+    "lines_by_extension": {
+      ".md": 3025,
+      ".sh": 1101,
+      ".py": 756,
+      ".json": 334,
+      ".log": 125,
+      ".yml": 113,
+      "(no ext)": 106,
+      ".example": 83,
+      ".conf": 49,
+      ".txt": 49,
+      ".yaml": 3,
+      ".pid": 2
+    },
+    "components": {
+      "agents": true,
+      "scripts": true,
+      "configs": true,
+      "docs": true,
+      "tests": true,
+      "src": true,
+      "context": true
+    }
+  },
+  "git": {
+    "branch": "master",
+    "commit": "caf0004",
+    "is_dirty": true,
+    "uncommitted_files": [
+      "context/generated/context_summary.md",
+      "context/generated/project_snapshot.json"
+    ],
+    "remotes": [
+      "origin\tgit@github.com:redeintegrativa-bot/ai-operating-system.git (fetch)",
+      "origin\tgit@github.com:redeintegrativa-bot/ai-operating-system.git (push)"
+    ],
+    "last_commits": [
+      {
+        "hash": "caf0004",
+        "message": "Auto-backup: 2026-07-19 06:28:55",
+        "date": "2026-07-19 06:28:56 +0000",
+        "author": "Silicato"
+      },
+      {
+        "hash": "78772fd",
+        "message": "Auto-backup: 2026-07-19 06:23:50",
+        "date": "2026-07-19 06:23:51 +0000",
+        "author": "Silicato"
+      },
+      {
+        "hash": "13fcc56",
+        "message": "Auto-backup: 2026-07-19 06:23:17",
+        "date": "2026-07-19 06:23:17 +0000",
+        "author": "Silicato"
+      },
+      {
+        "hash": "9e5cb2a",
+        "message": "Auto-backup: 2026-07-19 06:22:44",
+        "date": "2026-07-19 06:22:44 +0000",
+        "author": "Silicato"
+      },
+      {
+        "hash": "2ff64bd",
+        "message": "Auto-backup: 2026-07-19 06:22:10",
+        "date": "2026-07-19 06:22:11 +0000",
+        "author": "Silicato"
+      },
+      {
+        "hash": "519e3fc",
+        "message": "Auto-backup: 2026-07-19 06:21:37",
+        "date": "2026-07-19 06:21:38 +0000",
+        "author": "Silicato"
+      },
+      {
+        "hash": "63c7034",
+        "message": "Auto-backup: 2026-07-19 06:18:33",
+        "date": "2026-07-19 06:18:34 +0000",
+        "author": "Silicato"
+      },
+      {
+        "hash": "417c3ff",
+        "message": "Auto-backup: 2026-07-19 06:17:30",
+        "date": "2026-07-19 06:17:30 +0000",
+        "author": "Silicato"
+      },
+      {
+        "hash": "6c51912",
+        "message": "Auto-backup: 2026-07-19 05:48:52",
+        "date": "2026-07-19 05:48:52 +0000",
+        "author": "Silicato"
+      },
+      {
+        "hash": "634cc57",
+        "message": "Auto-backup: 2026-07-19 05:26:06",
+        "date": "2026-07-19 05:26:07 +0000",
+        "author": "Silicato"
+      }
+    ]
+  },
+  "config_files_loaded": [
+    "package.json",
+    "requirements.txt",
+    "docker-compose.yml",
+    ".env.example",
+    "config/agents.yaml",
+    "config/backup_cron.example",
+    "config/default.json",
+    "config/logrotate.conf",
+    "config/settings.py",
+    "README.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    ".gitignore"
+  ]
+}
