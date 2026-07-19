@@ -19,7 +19,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.task_manager import TaskManager, TaskStatus, TaskPriority
 from core.memory import MemorySystem, MemoryType
-from core.agent_registry import AgentRegistry
+try:
+    from core.agent_registry import AgentRegistry
+except ImportError:
+    AgentRegistry = None  # placeholder module
 
 logging.basicConfig(
     level=logging.INFO,

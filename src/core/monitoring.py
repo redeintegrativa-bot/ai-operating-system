@@ -203,7 +203,7 @@ class Monitor:
                     message=f"Memory usage: {memory.percent}%",
                     timestamp=datetime.now()
                 ))
-            else:
+            elif hasattr(os, 'getloadavg'):
                 load_avg = os.getloadavg()
                 cpu_status = HealthStatus.HEALTHY
                 if load_avg[0] > 4.0:
@@ -222,6 +222,20 @@ class Monitor:
                     component="memory",
                     status=HealthStatus.HEALTHY,
                     message="Memory check requires psutil (install psutil for detailed metrics)",
+                    timestamp=datetime.now()
+                ))
+            else:
+                checks.append(HealthCheck(
+                    component="cpu",
+                    status=HealthStatus.HEALTHY,
+                    message="CPU metrics not available on this platform",
+                    timestamp=datetime.now()
+                ))
+                
+                checks.append(HealthCheck(
+                    component="memory",
+                    status=HealthStatus.HEALTHY,
+                    message="Memory metrics not available on this platform",
                     timestamp=datetime.now()
                 ))
             
@@ -255,23 +269,50 @@ class Monitor:
     
     def get_system_metrics(self) -> Dict:
         try:
-            cpu_percent = psutil.cpu_percent(interval=1)
-            memory = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
-            
             uptime = time.time() - self.start_time
             
-            return {
-                "cpu_percent": cpu_percent,
-                "memory_percent": memory.percent,
-                "memory_used_gb": memory.used / (1024 ** 3),
-                "memory_total_gb": memory.total / (1024 ** 3),
-                "disk_percent": disk.percent,
-                "disk_used_gb": disk.used / (1024 ** 3),
-                "disk_total_gb": disk.total / (1024 ** 3),
-                "uptime_seconds": uptime,
-                "timestamp": datetime.now().isoformat()
-            }
+            if HAS_PSUTIL:
+                cpu_percent = psutil.cpu_percent(interval=1)
+                memory = psutil.virtual_memory()
+                disk = psutil.disk_usage('/')
+                
+                return {
+                    "cpu_percent": cpu_percent,
+                    "memory_percent": memory.percent,
+                    "memory_used_gb": memory.used / (1024 ** 3),
+                    "memory_total_gb": memory.total / (1024 ** 3),
+                    "disk_percent": disk.percent,
+                    "disk_used_gb": disk.used / (1024 ** 3),
+                    "disk_total_gb": disk.total / (1024 ** 3),
+                    "uptime_seconds": uptime,
+                    "timestamp": datetime.now().isoformat()
+                }
+            else:
+                result = {"uptime_seconds": uptime, "timestamp": datetime.now().isoformat()}
+                
+                if hasattr(os, 'getloadavg'):
+                    load_avg = os.getloadavg()
+                    result["cpu_load_avg"] = list(load_avg)
+                else:
+                    result["cpu_load_avg"] = "not available on this platform"
+                
+                try:
+                    statvfs = os.statvfs('/')
+                    disk_total = statvfs.f_blocks * statvfs.f_frsize
+                    disk_free = statvfs.f_bavail * statvfs.f_frsize
+                    disk_used = disk_total - disk_free
+                    disk_percent = (disk_used / disk_total * 100) if disk_total > 0 else 0
+                    
+                    result.update({
+                        "disk_percent": disk_percent,
+                        "disk_used_gb": disk_used / (1024 ** 3),
+                        "disk_total_gb": disk_total / (1024 ** 3)
+                    })
+                except Exception:
+                    result["disk"] = "disk metrics not available"
+                
+                result["note"] = "psutil not available; limited metrics shown"
+                return result
         except Exception as e:
             return {"error": str(e), "timestamp": datetime.now().isoformat()}
     
