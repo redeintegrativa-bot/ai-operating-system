@@ -153,9 +153,24 @@ User Request
 └──────┬──────┘
        │
        ▼
-┌─────────────┐
-│ Orchestrator │  ── Decompose → Route → Schedule
-└──────┬──────┘
+┌─────────────┐     ┌─────────────────────────────────────┐
+│ Orchestrator │ ◄── │           AIOS Kernel                │
+└──────┬──────┘     │  ┌──────────────┐  ┌──────────────┐ │
+       │            │  │ AgentManager │  │  Heartbeat   │ │
+       │            │  │  (modes,     │  │   Monitor    │ │
+       │            │  │   config)    │  │  (health)    │ │
+       │            │  └──────────────┘  └──────────────┘ │
+       │            │  ┌──────────────┐                   │
+       │            │  │   Scheduler  │                   │
+       │            │  │  (missions)  │                   │
+       │            │  └──────────────┘                   │
+       │            └─────────────────────────────────────┘
+       │                        │
+       │                        ▼
+       │            ┌─────────────────────┐
+       │            │  Suggestion Inbox    │
+       │            │  (agent suggestions) │
+       │            └─────────────────────┘
        │
        ├──────────────────┬──────────────────┐
        ▼                  ▼                  ▼
@@ -194,6 +209,77 @@ PENDING → ROUTING → ASSIGNED → RUNNING → COMPLETED
 - **Circuit breaker**: Agents with high failure rates are temporarily taken offline
 
 ## Core Engine Modules
+
+### AIOS Kernel (`src/core/kernel.py`)
+
+Central infrastructure for agent intelligence. Provides AgentManager, Heartbeat monitoring, and Scheduler for recurring missions.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                      AIOSKernel                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │ AgentManager │  │  Heartbeat   │  │   Scheduler  │  │
+│  │              │  │   Monitor    │  │              │  │
+│  │ • register   │  │ • record     │  │ • add_mission│  │
+│  │ • set_mode   │  │ • get_stale  │  │ • get_due    │  │
+│  │ • get_all    │  │ • get_all    │  │ • start/stop │  │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  │
+│         │                 │                 │           │
+│         └─────────────────┼─────────────────┘           │
+│                           ▼                             │
+│              ┌────────────────────────┐                 │
+│              │    Integrations        │                 │
+│              │ • Orchestrator         │                 │
+│              │ • EventBus             │                 │
+│              │ • Monitor              │                 │
+│              └────────────────────────┘                 │
+└─────────────────────────────────────────────────────────┘
+```
+
+**AgentManager:** Dynamic agent registration with modes (Manual/Assisted/Autonomous), persistence in `.aios/agents/`, and auto_suggest control.
+
+**HeartbeatMonitor:** Tracks agent health via periodic heartbeats. Detects stale agents (configurable timeout), tracks latency and active tasks.
+
+**Scheduler:** Recurring mission engine with cron expressions or intervals. Runs as daemon thread with 10s poll. Tracks last_run, next_run, run_count.
+
+**Agent Modes:**
+- `manual` — Requires explicit user approval for all actions
+- `assisted` — Operates with user supervision; suggests actions
+- `autonomous` — Full independence; executes without human intervention
+
+### Suggestion Inbox (`src/core/suggestions.py`)
+
+Agent-generated suggestions for human review. No automatic execution — user must approve/reject each suggestion.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  SuggestionInbox                         │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │                   Workflow                        │  │
+│  │                                                  │  │
+│  │  Agent ──► add() ──► PENDING ──► APPROVED        │  │
+│  │                          │            │          │  │
+│  │                          ▼            ▼          │  │
+│  │                      REJECTED    EXECUTED        │  │
+│  │                          │                      │  │
+│  │                          ▼                      │  │
+│  │                      DISMISSED                  │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                         │
+│  SuggestionGenerator:                                   │
+│  • create_improvement()  • create_research()            │
+│  • create_question()     • create_mission_idea()        │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Suggestion Types:**
+- `improvement` — Code or system improvement suggestions
+- `research` — Research topics suggested by agents
+- `question` — Strategic questions for the user
+- `mission` — Recurring mission ideas
+
+**Features:** Filter by agent/type/status/priority, JSON persistence in `.aios/suggestions/`, statistics, recent suggestions.
 
 ### Event System (`src/core/events.py`)
 
