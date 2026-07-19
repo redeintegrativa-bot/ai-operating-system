@@ -95,8 +95,137 @@ const Store = {
    * @returns {Promise<void>}
    */
   async sync() {
-    // Placeholder: will POST local state and merge remote changes
     console.log('[Store] sync() called — will connect to backend in future version');
+  },
+
+  /**
+   * Fetch all data from Kernel API in parallel.
+   * Sets loading flags, fetches data, updates state, clears loading.
+   * Falls back to existing mock data on error.
+   * @returns {Promise<void>}
+   */
+  async fetchAll() {
+    await Promise.all([
+      this.fetchAgents(),
+      this.fetchMissions(),
+      this.fetchSuggestions(),
+      this.fetchDashboard(),
+    ]);
+  },
+
+  /**
+   * Fetch agents from Kernel API.
+   * @returns {Promise<void>}
+   */
+  async fetchAgents() {
+    this.loading.agents = true;
+    this.errors.agents = null;
+    this._notify('loading');
+    try {
+      const agents = await API.agents.list();
+      this.state.agents = agents;
+      this.save();
+      this._notify('agents');
+    } catch (e) {
+      console.warn('[Store] Failed to fetch agents:', e);
+      this.errors.agents = e.message || 'Failed to load agents';
+      this._notify('errors');
+    } finally {
+      this.loading.agents = false;
+      this._notify('loading');
+    }
+  },
+
+  /**
+   * Fetch missions from Kernel API scheduler.
+   * @returns {Promise<void>}
+   */
+  async fetchMissions() {
+    this.loading.missions = true;
+    this.errors.missions = null;
+    this._notify('loading');
+    try {
+      const missions = await API.missions.list();
+      if (missions.length > 0) {
+        this.state.missions = missions;
+        this.save();
+        this._notify('missions');
+      }
+    } catch (e) {
+      console.warn('[Store] Failed to fetch missions:', e);
+      this.errors.missions = e.message || 'Failed to load missions';
+      this._notify('errors');
+    } finally {
+      this.loading.missions = false;
+      this._notify('loading');
+    }
+  },
+
+  /**
+   * Fetch suggestions from Kernel API.
+   * @returns {Promise<void>}
+   */
+  async fetchSuggestions() {
+    this.loading.suggestions = true;
+    this.errors.suggestions = null;
+    this._notify('loading');
+    try {
+      const data = await API.suggestions();
+      if (data && data.suggestions) {
+        this.state.suggestions = data.suggestions;
+        this._notify('suggestions');
+      }
+    } catch (e) {
+      console.warn('[Store] Failed to fetch suggestions:', e);
+      this.errors.suggestions = e.message || 'Failed to load suggestions';
+      this._notify('errors');
+    } finally {
+      this.loading.suggestions = false;
+      this._notify('loading');
+    }
+  },
+
+  /**
+   * Fetch aggregated dashboard data from Kernel API.
+   * @returns {Promise<void>}
+   */
+  async fetchDashboard() {
+    this.loading.dashboard = true;
+    this.errors.dashboard = null;
+    this._notify('loading');
+    try {
+      const data = await API.dashboard();
+      if (data) {
+        this.state.dashboard = data;
+        this._notify('dashboard');
+      }
+    } catch (e) {
+      console.warn('[Store] Failed to fetch dashboard data:', e);
+      this.errors.dashboard = e.message || 'Failed to load dashboard';
+      this._notify('errors');
+    } finally {
+      this.loading.dashboard = false;
+      this._notify('loading');
+    }
+  },
+
+  /**
+   * Check if any data is currently loading.
+   * @returns {boolean}
+   */
+  isLoading() {
+    return Object.values(this.loading).some(v => v);
+  },
+
+  /**
+   * Get the first active error, if any.
+   * @returns {string|null}
+   */
+  getFirstError() {
+    for (const key of Object.keys(this.errors)) {
+      if (this.errors[key]) return this.errors[key];
+    }
+    return null;
   },
 
   /**
