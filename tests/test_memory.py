@@ -80,7 +80,7 @@ class TestMemorySearch:
         assert any("python" in m.keywords for m in results)
 
     def test_search_no_match(self, mem):
-        mem.add_memory("eng", MemoryType.SEMANTIC, {"t": 1}, keywords=["python"], importance=0.0)
+        mem.add_memory("eng", MemoryType.SEMANTIC, {"t": 1}, keywords=["python"])
         results = mem.search_memories("blockchain solidity")
         assert len(results) == 0
 

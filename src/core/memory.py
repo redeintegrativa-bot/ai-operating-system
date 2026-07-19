@@ -71,6 +71,8 @@ class Memory:
         if not query_keywords:
             return 0.0
         matches = len(kw_set & query_keywords)
+        if matches == 0:
+            return 0.0
         score = matches / max(len(query_keywords), 1)
         score += self.importance * 0.3
         recency = min((datetime.now() - self.last_accessed).total_seconds() / 86400, 365)
