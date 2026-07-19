@@ -353,7 +353,7 @@ REST API for external system integration (FastAPI):
 
 ## Test Suite (`tests/`)
 
-129 unit tests covering all core modules:
+180+ unit tests covering all core modules:
 
 | Module | Tests | Coverage |
 |--------|-------|----------|
@@ -362,6 +362,8 @@ REST API for external system integration (FastAPI):
 | Memory | 18 | CRUD, search, sharing, consolidation, persistence |
 | EventBus | 24 | Publishing, subscribing, filtering, archiving, replay |
 | Monitor | 21 | Logging, metrics, health, alerts, reports |
+| AIOS Kernel | 40 | AgentManager, HeartbeatMonitor, Scheduler, CLI, persistence |
+| Suggestion Inbox | 25 | CRUD, review workflow, filters, stats, persistence |
 
 Run with: `python -m pytest tests/ -v`
 
