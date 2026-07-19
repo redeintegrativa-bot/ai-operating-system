@@ -400,7 +400,228 @@ graph TB
       </div>
     </section>
 
-    <!-- 2. Módulos Existentes -->
+    <!-- 2. AIOS Kernel -->
+    <section id="kernel">
+      <h2><span class="sec-icon">◈</span> AIOS Kernel</h2>
+      <p>O kernel do AIOS fornece infraestrutura central para gerenciamento de agentes, monitoramento de saúde e agendamento de missões recorrentes.</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(91,141,239,0.12);color:var(--accent-blue)">🔷</div><div><div class="card-title">AgentManager</div><div class="card-subtitle">Dynamic Agent Configuration</div></div></div>
+          <div class="card-body">
+            <p>Gerencia registro dinâmico, configuração e modo de operação dos agentes.</p>
+            <ul>
+              <li>Registro e unregister de agentes</li>
+              <li>Modos: Manual, Assisted, Autonomous</li>
+              <li>Persistência em JSON (<code>.aios/agents/</code>)</li>
+              <li>Controle de auto_suggest por agente</li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip">register</span>
+              <span class="chip">set_mode</span>
+              <span class="chip">get_by_mode</span>
+              <span class="chip green">can_auto_suggest</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(52,211,153,0.12);color:var(--accent-green)">💚</div><div><div class="card-title">HeartbeatMonitor</div><div class="card-subtitle">Agent Health Tracking</div></div></div>
+          <div class="card-body">
+            <p>Monitora saúde dos agentes via heartbeats periódicos.</p>
+            <ul>
+              <li>Registro de heartbeat com timestamp</li>
+              <li>Detecção de agentes stale (configurável)</li>
+              <li>Tracking de latency e active_tasks</li>
+              <li>Status: healthy, degraded, unhealthy, unknown</li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip green">record</span>
+              <span class="chip green">get_stale</span>
+              <span class="chip green">get_all</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(167,139,250,0.12);color:var(--accent-purple)">⏰</div><div><div class="card-title">Scheduler</div><div class="card-subtitle">Recurring Mission Engine</div></div></div>
+          <div class="card-body">
+            <p>Agendador de tarefas e missões recorrentes.</p>
+            <ul>
+              <li>Missions com cron_expression ou interval</li>
+              <li>Callbacks registrados por mission_id</li>
+              <li>Loop daemon thread (10s poll)</li>
+              <li>Tracking de last_run, next_run, run_count</li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip purple">add_mission</span>
+              <span class="chip purple">get_due_missions</span>
+              <span class="chip purple">start</span>
+              <span class="chip purple">stop</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(251,146,60,0.12);color:var(--accent-orange)">🔗</div><div><div class="card-title">AIOSKernel</div><div class="card-subtitle">Main Kernel Orchestrator</div></div></div>
+          <div class="card-body">
+            <p>Integra todos os subsistemas: AgentManager, Heartbeat, Scheduler.</p>
+            <ul>
+              <li>Integração com Orchestrator, EventBus, Monitor</li>
+              <li>Status consolidado do sistema</li>
+              <li>Gerenciamento de ciclo de vida (start/stop)</li>
+              <li>Factory function: <code>create_default_kernel()</code></li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip orange">set_orchestrator</span>
+              <span class="chip orange">set_event_bus</span>
+              <span class="chip orange">get_status</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Diagrama do Kernel</h3>
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+graph TB
+    subgraph "AIOSKernel"
+        KM["AIOSKernel<br/><small>Main Orchestrator</small>"]
+        AM["AgentManager<br/><small>Dynamic Config</small>"]
+        HM["HeartbeatMonitor<br/><small>Health Tracking</small>"]
+        SC["Scheduler<br/><small>Mission Engine</small>"]
+    end
+
+    subgraph "Integrations"
+        ORC["Orchestrator<br/><small>Task Routing</small>"]
+        EB["EventBus<br/><small>Pub/Sub</small>"]
+        MON["Monitor<br/><small>Observability</small>"]
+    end
+
+    subgraph "Agent Configs"
+        AC1["AgentConfig<br/><small>orchestrator</small>"]
+        AC2["AgentConfig<br/><small>engineer</small>"]
+        AC3["AgentConfig<br/><small>...8 agents</small>"]
+    end
+
+    subgraph "Missions"
+        M1["ScheduledMission<br/><small>daily_audit</small>"]
+        M2["ScheduledMission<br/><small>health_check</small>"]
+    end
+
+    KM --> AM
+    KM --> HM
+    KM --> SC
+    KM --> ORC
+    KM --> EB
+    KM --> MON
+    AM --> AC1
+    AM --> AC2
+    AM --> AC3
+    SC --> M1
+    SC --> M2
+
+    style KM fill:#1a2744,stroke:#fb923c,color:#e4e4ed
+    style AM fill:#1a2744,stroke:#5b8def,color:#e4e4ed
+    style HM fill:#1a2744,stroke:#34d399,color:#e4e4ed
+    style SC fill:#1a2744,stroke:#a78bfa,color:#e4e4ed
+        </div>
+      </div>
+
+      <h3>Agent Modes</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Mode</th><th>Description</th><th>Behavior</th></tr></thead>
+          <tbody>
+            <tr><td><span class="chip red">manual</span></td><td>Agent requires explicit user approval</td><td>No automatic execution; all actions require human confirmation</td></tr>
+            <tr><td><span class="chip yellow">assisted</span></td><td>Agent operates with user supervision</td><td>Can suggest actions; user approves before execution</td></tr>
+            <tr><td><span class="chip green">autonomous</span></td><td>Agent operates independently</td><td>Full autonomy; executes tasks without human intervention</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3. Suggestion Inbox -->
+    <section id="suggestions">
+      <h2><span class="sec-icon">💡</span> Suggestion Inbox</h2>
+      <p>Sistema de sugestões geradas por agentes para revisão humana. Nenhuma execução automática — o usuário deve aprovar/rejeitar cada sugestão.</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(251,191,36,0.12);color:var(--accent-yellow)">📬</div><div><div class="card-title">SuggestionInbox</div><div class="card-subtitle">Review Workflow</div></div></div>
+          <div class="card-body">
+            <p>Gerencia sugestões com workflow de aprovação.</p>
+            <ul>
+              <li>Add, approve, reject, dismiss</li>
+              <li>Filtros: por agente, tipo, status, prioridade</li>
+              <li>Persistência em JSON (<code>.aios/suggestions/</code>)</li>
+              <li>Estatísticas do inbox</li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip yellow">add</span>
+              <span class="chip yellow">approve</span>
+              <span class="chip yellow">reject</span>
+              <span class="chip yellow">get_pending</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-icon" style="background:rgba(34,211,238,0.12);color:var(--accent-cyan)">🤖</div><div><div class="card-title">SuggestionGenerator</div><div class="card-subtitle">Template Factory</div></div></div>
+          <div class="card-body">
+            <p>Factory para criar sugestões estruturadas.</p>
+            <ul>
+              <li><code>create_improvement()</code> — Melhorias</li>
+              <li><code>create_research()</code> — Tópicos de pesquisa</li>
+              <li><code>create_question()</code> — Perguntas estratégicas</li>
+              <li><code>create_mission_idea()</code> — Ideias de missão</li>
+            </ul>
+            <div style="margin-top:8px">
+              <span class="chip cyan">improvement</span>
+              <span class="chip cyan">research</span>
+              <span class="chip cyan">question</span>
+              <span class="chip cyan">mission</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Suggestion Lifecycle</h3>
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+stateDiagram-v2
+    [*] --> PENDING
+    PENDING --> APPROVED : User approves
+    PENDING --> REJECTED : User rejects
+    PENDING --> DISMISSED : User dismisses
+    APPROVED --> EXECUTED : Suggestion executed
+    REJECTED --> [*]
+    DISMISSED --> [*]
+    EXECUTED --> [*]
+
+    state "Config" as CFG {
+        types: improvement, research, question, mission
+        priorities: low, medium, high
+        storage: .aios/suggestions/inbox.json
+    }
+        </div>
+      </div>
+
+      <h3>Suggestion Types</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td><span class="chip yellow">improvement</span></td><td>Sugestões de melhoria de código ou sistema</td><td>"Refatorar módulo X para usar async"</td></tr>
+            <tr><td><span class="chip cyan">research</span></td><td>Tópicos de pesquisa sugeridos</td><td>"Pesquisar alternativas ao Redis"</td></tr>
+            <tr><td><span class="chip">question</span></td><td>Perguntas estratégicas para o usuário</td><td>"Deveríamos migrar para PostgreSQL?"</td></tr>
+            <tr><td><span class="chip purple">mission</span></td><td>Ideias de missões recorrentes</td><td>"Criar missão diária de code review"</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. Módulos Existentes -->
     <section id="modules">
       <h2><span class="sec-icon">▣</span> Módulos Existentes</h2>
       <p>Todos os módulos identificados no projeto, organizados por camada funcional.</p>
