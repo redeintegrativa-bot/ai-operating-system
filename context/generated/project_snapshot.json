@@ -2,14 +2,14 @@
   "metadata": {
     "project_name": "ai-operating-system",
     "project_root": "/root/ai-operating-system",
-    "generated_at": "2026-07-19T06:29:20.624563+00:00"
+    "generated_at": "2026-07-19T06:35:25.735763+00:00"
   },
   "structure": {
-    "total_files": 76,
+    "total_files": 78,
     "total_dirs": 23,
-    "total_lines": 5746,
+    "total_lines": 6523,
     "files_by_extension": {
-      ".py": 38,
+      ".py": 40,
       ".md": 17,
       ".sh": 6,
       "(no ext)": 3,
@@ -23,11 +23,11 @@
       ".txt": 1
     },
     "lines_by_extension": {
-      ".md": 3025,
+      ".md": 3030,
+      ".py": 1495,
       ".sh": 1101,
-      ".py": 756,
-      ".json": 334,
-      ".log": 125,
+      ".json": 337,
+      ".log": 155,
       ".yml": 113,
       "(no ext)": 106,
       ".example": 83,
@@ -48,17 +48,34 @@
   },
   "git": {
     "branch": "master",
-    "commit": "caf0004",
+    "commit": "788755c",
     "is_dirty": true,
     "uncommitted_files": [
-      "context/generated/context_summary.md",
-      "context/generated/project_snapshot.json"
+      "context/scripts/context_integration.py"
     ],
     "remotes": [
       "origin\tgit@github.com:redeintegrativa-bot/ai-operating-system.git (fetch)",
       "origin\tgit@github.com:redeintegrativa-bot/ai-operating-system.git (push)"
     ],
     "last_commits": [
+      {
+        "hash": "788755c",
+        "message": "Auto-backup: 2026-07-19 06:35:07",
+        "date": "2026-07-19 06:35:07 +0000",
+        "author": "Silicato"
+      },
+      {
+        "hash": "27e0d05",
+        "message": "Auto-backup: 2026-07-19 06:32:02",
+        "date": "2026-07-19 06:32:03 +0000",
+        "author": "Silicato"
+      },
+      {
+        "hash": "fb778c2",
+        "message": "Auto-backup: 2026-07-19 06:29:29",
+        "date": "2026-07-19 06:29:29 +0000",
+        "author": "Silicato"
+      },
       {
         "hash": "caf0004",
         "message": "Auto-backup: 2026-07-19 06:28:55",
@@ -99,24 +116,6 @@
         "hash": "63c7034",
         "message": "Auto-backup: 2026-07-19 06:18:33",
         "date": "2026-07-19 06:18:34 +0000",
-        "author": "Silicato"
-      },
-      {
-        "hash": "417c3ff",
-        "message": "Auto-backup: 2026-07-19 06:17:30",
-        "date": "2026-07-19 06:17:30 +0000",
-        "author": "Silicato"
-      },
-      {
-        "hash": "6c51912",
-        "message": "Auto-backup: 2026-07-19 05:48:52",
-        "date": "2026-07-19 05:48:52 +0000",
-        "author": "Silicato"
-      },
-      {
-        "hash": "634cc57",
-        "message": "Auto-backup: 2026-07-19 05:26:06",
-        "date": "2026-07-19 05:26:07 +0000",
         "author": "Silicato"
       }
     ]

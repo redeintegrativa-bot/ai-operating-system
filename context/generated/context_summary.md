@@ -1,16 +1,19 @@
 # Project Context Summary
 
-**Generated**: 2026-07-19T06:29:20.626403+00:00
+**Generated**: 2026-07-19T06:35:25.740173+00:00
 **Project**: ai-operating-system
 
 ## Git State
 
 - Branch: `master`
-- Commit: `caf0004`
+- Commit: `788755c`
 - Dirty: True
 
 ### Last Commits
 
+- `788755c` Auto-backup: 2026-07-19 06:35:07 (2026-07-19, Silicato)
+- `27e0d05` Auto-backup: 2026-07-19 06:32:02 (2026-07-19, Silicato)
+- `fb778c2` Auto-backup: 2026-07-19 06:29:29 (2026-07-19, Silicato)
 - `caf0004` Auto-backup: 2026-07-19 06:28:55 (2026-07-19, Silicato)
 - `78772fd` Auto-backup: 2026-07-19 06:23:50 (2026-07-19, Silicato)
 - `13fcc56` Auto-backup: 2026-07-19 06:23:17 (2026-07-19, Silicato)
@@ -18,37 +21,33 @@
 - `2ff64bd` Auto-backup: 2026-07-19 06:22:10 (2026-07-19, Silicato)
 - `519e3fc` Auto-backup: 2026-07-19 06:21:37 (2026-07-19, Silicato)
 - `63c7034` Auto-backup: 2026-07-19 06:18:33 (2026-07-19, Silicato)
-- `417c3ff` Auto-backup: 2026-07-19 06:17:30 (2026-07-19, Silicato)
-- `6c51912` Auto-backup: 2026-07-19 05:48:52 (2026-07-19, Silicato)
-- `634cc57` Auto-backup: 2026-07-19 05:26:06 (2026-07-19, Silicato)
 
 ### Uncommitted Changes
 
-- `context/generated/context_summary.md`
-- `context/generated/project_snapshot.json`
+- `context/scripts/context_integration.py`
 
 ## Project Structure
 
-- Total files: **76**
+- Total files: **78**
 - Total directories: **23**
-- Total lines of code: **5746**
+- Total lines of code: **6523**
 
 ### Files by Type
 
 | Extension | Count | Lines |
 |-----------|-------|-------|
-| `.py` | 38 | 756 |
-| `.md` | 17 | 3025 |
+| `.py` | 40 | 1495 |
+| `.md` | 17 | 3030 |
 | `.sh` | 6 | 1101 |
-| `.json` | 3 | 334 |
 | `(no ext)` | 3 | 106 |
-| `.log` | 2 | 125 |
+| `.json` | 3 | 337 |
+| `.log` | 2 | 155 |
 | `.example` | 2 | 83 |
-| `.yaml` | 1 | 3 |
 | `.conf` | 1 | 49 |
-| `.yml` | 1 | 113 |
-| `.pid` | 1 | 2 |
 | `.txt` | 1 | 49 |
+| `.pid` | 1 | 2 |
+| `.yml` | 1 | 113 |
+| `.yaml` | 1 | 3 |
 
 ### Key Components
 
