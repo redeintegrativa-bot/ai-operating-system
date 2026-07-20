@@ -84,6 +84,19 @@ body {
   --sidebar-width: 240px;
   --sidebar-collapsed: 64px;
   --topbar-height: 56px;
+
+  /* Aliases for consistency with dashboard components */
+  --color-surface: var(--bg-card);
+  --color-border: var(--border);
+  --color-border-hover: var(--border-active);
+  --color-text: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-primary: var(--accent-blue);
+  --color-accent: var(--accent-purple);
+  --color-success: var(--accent-green);
+  --color-warning: var(--accent-orange);
+  --color-danger: var(--accent-red);
+  --radius: var(--radius-md);
 }
 
 /* ============================================================
