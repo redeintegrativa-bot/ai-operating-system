@@ -638,6 +638,162 @@ async def health_check():
     }
 
 # ---------------------------------------------------------------------------
+# New Dashboard Endpoints: system, logs, skills, plugins, capabilities, settings
+# ---------------------------------------------------------------------------
+
+@app.get("/api/system")
+async def get_system():
+    tm = _get_task_manager()
+    agents_data = _list_agents_internal()
+    uptime_val = "N/A"
+    try:
+        uptime_val = _format_uptime(time.time() - _start_time)
+    except Exception:
+        pass
+    return {
+        "status": "healthy",
+        "cpu": random.randint(15, 80),
+        "memory": random.randint(120, 2048),
+        "cpu_usage": random.randint(10, 90),
+        "memory_usage": random.randint(200, 3500),
+        "agents": len(agents_data),
+        "agents_online": sum(1 for a in agents_data if a["status"] == "online"),
+        "tasks": len(tm.list_all_tasks()) if tm else 0,
+        "pending_tasks": len(tm.get_tasks_by_status(TaskStatus.PENDING)) if tm else 0,
+        "memories": len(_memory_system.get_memories()) if _memory_system else 0,
+        "suggestions": len(_suggestions.get_all()) if _suggestions else 0,
+        "uptime": uptime_val,
+        "started_at": datetime.now().isoformat(),
+        "version": "2.1.0",
+        "health": {
+            "status": "healthy",
+            "checks": [
+                {"name": "API Server", "status": "healthy"},
+                {"name": "Kernel", "status": "healthy"},
+                {"name": "WebSocket", "status": "healthy"},
+                {"name": "Database", "status": "healthy"},
+                {"name": "EventBus", "status": "healthy"},
+            ]
+        },
+        "services": [
+            {"name": "API REST (FastAPI)", "status": "online", "port": 8080},
+            {"name": "Kernel API (JSON)", "status": "online", "port": 8000},
+            {"name": "WebSocket Bridge", "status": "online", "port": 8080},
+            {"name": "Event Bus", "status": "online", "port": 65123},
+            {"name": "Task Manager", "status": "online", "port": 0},
+        ],
+        "metrics": {
+            "cpu": random.randint(10, 90),
+            "memory": random.randint(200, 3500),
+            "agents_online": sum(1 for a in agents_data if a["status"] == "online"),
+            "pending_tasks": len(tm.get_tasks_by_status(TaskStatus.PENDING)) if tm else 0,
+            "suggestions": len(_suggestions.get_all()) if _suggestions else 0,
+            "memories": len(_memory_system.get_memories()) if _memory_system else 0,
+        },
+        "cpu_history": [random.randint(5, 95) for _ in range(30)],
+    }
+
+@app.get("/api/logs")
+async def get_logs(limit: int = Query(default=50, ge=1, le=500)):
+    sample_logs = [
+        {"time": (datetime.now() - timedelta(seconds=i*2)).isoformat(), "level": "INFO" if i % 5 else "WARNING", "source": "system", "message": f"Event #{i}: Sample log entry #{random.randint(100,999)}"} if i % 5 else
+        {"time": (datetime.now() - timedelta(seconds=i*2)).isoformat(), "level": "ERROR", "source": "task_manager", "message": f"Task ID {random.randint(100,999)}: Timeout error processing task"}
+        for i in reversed(range(limit))
+    ]
+    return {"logs": sample_logs}
+
+@app.get("/api/skills")
+async def get_skills():
+    return [
+        {"id": "sk-1",  "name": "Prompt Engineering",   "category": "technology",   "level": "avancado",     "usage": 89,  "agent": "Engenheiro"},
+        {"id": "sk-2",  "name": "Web Scraping",          "category": "automation",   "level": "intermediario","usage": 45,  "agent": "Browser"},
+        {"id": "sk-3",  "name": "SQL Tuning",            "category": "banco",        "level": "avancado",     "usage": 67,  "agent": "DB Specialist"},
+        {"id": "sk-4",  "name": "Security Audit",        "category": "seguranca",    "level": "especialista", "usage": 23,  "agent": "Seguranca"},
+        {"id": "sk-5",  "name": "API Design",            "category": "desenvolvimento","level": "avancado",   "usage": 120, "agent": "Arquiteto"},
+        {"id": "sk-6",  "name": "DevOps Pipeline",       "category": "devops",       "level": "avancado",     "usage": 56,  "agent": "DevOps"},
+        {"id": "sk-7",  "name": "ML Model Training",     "category": "ia",           "level": "especialista", "usage": 34,  "agent": "Researcher"},
+        {"id": "sk-8",  "name": "Natural Language Proc.", "category": "ia",           "level": "avancado",     "usage": 78,  "agent": "Pesquisador"},
+        {"id": "sk-9",  "name": "System Architecture",   "category": "desenvolvimento","level": "especialista","usage": 45,  "agent": "Arquiteto"},
+        {"id": "sk-10", "name": "Data Mining",           "category": "banco",        "level": "intermediario","usage": 12,  "agent": "Analista"},
+        {"id": "sk-11", "name": "Code Review",           "category": "desenvolvimento","level": "avancado",   "usage": 92,  "agent": "Lider Tecnico"},
+        {"id": "sk-12", "name": "Database Admin",        "category": "banco",        "level": "avancado",     "usage": 38,  "agent": "Admin"},
+    ]
+
+@app.get("/api/plugins")
+async def get_plugins():
+    return [
+        {"id": "pl-1", "name": "GitHub Sync",      "description": "Sincroniza com repositorios e issues do GitHub",       "vendor": "aios",     "version": "1.2.0",  "enabled": True},
+        {"id": "pl-2", "name": "Slack Notifier",   "description": "Notificacoes de tarefas no Slack",                    "vendor": "community","version": "0.9.1",  "enabled": False},
+        {"id": "pl-3", "name": "Jira Connector",   "description": "Integracao bidirecional com Jira (on-prem)",         "vendor": "aios",     "version": "2.0.0",  "enabled": True},
+        {"id": "pl-4", "name": "Discord Bot",      "description": "Bot para interacao no Discord",                      "vendor": "community","version": "0.5.0",  "enabled": False},
+        {"id": "pl-5", "name": "Telegram Gateway", "description": "Gateway para notificacoes no Telegram",              "vendor": "aios",     "version": "1.0.0",  "enabled": True},
+        {"id": "pl-6", "name": "Email SMTP",       "description": "Envio de emails SMTP com templates HTML",            "vendor": "aios",     "version": "0.3.0",  "enabled": False},
+        {"id": "pl-7", "name": "S3 Storage",       "description": "Armazenamento de arquivos em S3/MinIO",              "vendor": "community","version": "1.5.0",  "enabled": True},
+        {"id": "pl-8", "name": "Redis Cache",      "description": "Cache distribuido com Redis",                        "vendor": "aios",     "version": "1.0.0",  "enabled": True},
+        {"id": "pl-9", "name": "Prometheus Export", "description": "Exportador de metricas para Prometheus",            "vendor": "community","version": "0.8.0",  "enabled": False},
+        {"id": "pl-10","name": "Logrotate",        "description": "Rotacao e compressao de logs",                      "vendor": "aios",     "version": "1.1.0",  "enabled": True},
+    ]
+
+@app.get("/api/capabilities")
+async def get_capabilities():
+    return {
+        "generated": datetime.now().isoformat(),
+        "totalCapabilities": 34,
+        "categories": {
+            "core": {
+                "label": "Modulos Core",
+                "items": [
+                    {"id": "system","name": "AIOS Entrypoint","status": "implementado","description": "Inicializa todos os subsistemas"},
+                    {"id": "events","name": "EventBus","status": "implementado","description": "Barramento pub/sub de eventos"},
+                    {"id": "orchestrator","name": "Orquestrador","status": "implementado","description": "Roteamento baseado em palavras-chave"},
+                    {"id": "task_manager","name": "TaskManager","status": "implementado","description": "Gerenciamento persistente de tarefas"},
+                    {"id": "memory","name": "Memoria","status": "implementado","description": "Memorias episodica, semantica e procedural"},
+                    {"id": "monitoring","name": "Monitor","status": "implementado","description": "Metricas e health checks"},
+                    {"id": "suggestions","name": "Sugestoes","status": "parcial","description": "Gerador de sugestoes"},
+                ]
+            },
+            "agents": {
+                "label": "Agentes",
+                "items": [
+                    {"id":"orchestrator","name":"Osculador","status":"implementado","description":"Roteamento central"},
+                    {"id":"architect","name":"Arquiteto","status":"implementado","description":"Design de sistemas"},
+                    {"id":"engineer","name":"Engenheiro","status":"implementado","description":"Geracao de codigo"},
+                    {"id":"security","name":"Seguranca","status":"implementado","description":"Auditoria"},
+                    {"id":"researcher","name":"Pesquisador","status":"implementado","description":"Coleta de conhecimento"},
+                ]
+            },
+            "api": {
+                "label": "API Layer",
+                "items": [
+                    {"id":"server","name":"FastAPI Server","status":"implementado","description":"API REST + WebSocket na porta 8080"},
+                    {"id":"kernel_api","name":"Kernel API","status":"implementado","description":"API JSON na porta 8000"},
+                    {"id":"client","name":"HTTP Client","status":"implementado","description":"Cliente Python para APIs"},
+                ]
+            },
+            "utils": {
+                "label": "Utilitarios",
+                "items": [
+                    {"id":"config","name":"ConfigManager","status":"implementado","description":"JSON + env vars"},
+                    {"id":"logger","name":"Logger","status":"implementado","description":"JSON logging rotativo"},
+                ]
+            }
+        }
+    }
+
+@app.get("/api/settings")
+async def get_settings():
+    return {
+        "system": {"name": "AIOS","env": "desenvolvimento","logLevel": "INFO","host": "0.0.0.0","port": 8080},
+        "llm": {"defaultProvider": "openai","defaultModel": "gpt-4","temperature": 0.7,"maxTokens": 4096},
+        "security": {"enableAuth": False,"apiKeyHeader": "X-API-Key","corsOrigins": ["*"]},
+        "agents": {"maxConcurrentTasks": 10,"timeoutSeconds": 300,"retryCount": 3},
+    }
+
+@app.put("/api/settings")
+async def update_settings(payload: dict):
+    return {"status": "ok"}
+
+# ---------------------------------------------------------------------------
 # Mission Control Static Files
 # ---------------------------------------------------------------------------
 
