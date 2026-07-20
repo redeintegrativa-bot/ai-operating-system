@@ -3,18 +3,21 @@
  * Real-time dashboard with live data from Kernel API.
  * Shows agents, tasks, queue, memory, CPU, activity, logs, system state, upcoming tasks.
  */
-const DashboardPage = {
+const Pages = window.Pages || {};
+
+Pages.Dashboard = {
   _unsubs: [],
 
-  async render() {
-    return `
+  render() {
+    const el = document.createElement('div');
+    el.innerHTML = `
       <div class="page-header">
         <div>
           <h1>Mission Control</h1>
           <p class="page-subtitle">Real-time system overview</p>
         </div>
         <div class="header-actions">
-          <button class="btn btn-sm btn-outline" onclick="DashboardPage.refresh()">
+          <button class="btn btn-sm btn-outline" onclick="Pages.Dashboard.refresh()">
             <span class="btn-icon">↻</span> Refresh
           </button>
           <span class="last-updated" id="lastUpdated"></span>
@@ -24,6 +27,7 @@ const DashboardPage = {
         ${this._renderSkeleton()}
       </div>
     `;
+    return el;
   },
 
   async mount() {
@@ -68,15 +72,16 @@ const DashboardPage = {
     this._renderCpuPanel();
   },
 
-  async refresh() {
+  refresh() {
     Store.stop();
-    await Promise.all([
+    Promise.all([
       Store.fetchDashboard().catch(() => {}),
       Store.fetchAgents().catch(() => {}),
       Store.fetchSystemLogs().catch(() => {}),
-    ]);
-    Store.start();
-    this._updateTimestamp();
+    ]).then(() => {
+      Store.start();
+      this._updateTimestamp();
+    });
   },
 
   _renderSkeleton() {
@@ -230,10 +235,10 @@ const DashboardPage = {
       </div>
       <div class="agents-mini-grid">
         ${agents.map(a => `
-          <div class="agent-mini-card" onclick="App.navigate('agents')">
+            <div class="agent-mini-card" onclick="Router.navigate('/agents')">
             <div class="agent-mini-avatar">${a.avatar || '🤖'}</div>
             <div class="agent-mini-info">
-              <div class="agent-mini-name">${a.name}</div>
+              <div class="agent-mini-name">${this._escape(a.name)}</div>
               <div class="agent-mini-status status-badge ${a.status}">${a.status}</div>
             </div>
           </div>
@@ -249,7 +254,6 @@ const DashboardPage = {
     const d = Store.get('dashboard');
     const q = d && d.taskQueue ? d.taskQueue : { pending: 0, running: 0, completed: 0 };
 
-    // Attempt to fetch detailed queue from API
     API.tasks.queue().then(queueData => {
       if (!queueData) return;
       const pending = queueData.pending || [];
@@ -289,7 +293,6 @@ const DashboardPage = {
       html += `</div>`;
       body.innerHTML = html;
     }).catch(() => {
-      // fallback: just show counts
       if (!el) return;
       el.querySelector('.panel-body').innerHTML = `
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
