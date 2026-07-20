@@ -1,243 +1,147 @@
 /**
- * AIOS Mission Control - API Layer
- * Consumes real data from the Kernel API backend.
- * Falls back to Store mock data if the API is unreachable.
+ * AIOS Mission Control - API Client
+ * HTTP client for the Kernel REST API with mock data fallback.
  */
+const API_URL = 'http://localhost:8000/api';
+const MOCK_MODE = false; // set true to always use mock data
+
 const API = {
-  /** @type {string} Backend base URL */
-  baseURL: '/api',
+  async _fetch(endpoint, options = {}) {
+    if (MOCK_MODE) return this._mockResponse(endpoint);
 
-  /** @type {boolean} Whether the backend is reachable */
-  _backendAvailable: null,
-
-  /**
-   * Generic HTTP request helper.
-   * @param {string} method
-   * @param {string} path
-   * @param {*} [body]
-   * @returns {Promise<{ok: boolean, data: *, status: number}>}
-   */
-  async _request(method, path, body) {
     try {
-      const opts = {
-        method,
+      const url = `${API_URL}${endpoint}`;
+      const res = await fetch(url, {
         headers: { 'Content-Type': 'application/json' },
-      };
-      if (body) opts.body = JSON.stringify(body);
-      const res = await fetch(`${this.baseURL}${path}`, opts);
-      if (!res.ok) {
-        return { ok: false, data: null, status: res.status };
-      }
+        ...options,
+        signal: AbortSignal.timeout(5000)
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      this._backendAvailable = true;
-      return { ok: true, data, status: res.status };
+      if (data && data.status === 'error') throw new Error(data.message || 'API error');
+      return data;
     } catch (e) {
-      this._backendAvailable = false;
-      return { ok: false, data: null, status: 0 };
+      if (e.name === 'TimeoutError') throw new Error('API timeout');
+      const fallback = this._mockResponse(endpoint);
+      if (fallback) return fallback;
+      throw e;
     }
   },
 
-  /**
-   * Check if the backend is reachable.
-   * @returns {Promise<boolean>}
-   */
-  async isAvailable() {
-    if (this._backendAvailable !== null) return this._backendAvailable;
-    const { ok } = await this._request('GET', '/dashboard');
-    return ok;
-  },
-
-  /**
-   * Normalize KernelAPI agent response to Store agent format.
-   * @param {Object} raw
-   * @returns {Object}
-   */
-  _normalizeAgent(raw) {
-    return {
-      id: raw.id || raw.name,
-      name: raw.name || 'Unknown',
-      status: (raw.heartbeat && raw.heartbeat.status) || raw.status || 'offline',
-      capabilities: raw.capabilities || [],
-      currentTask: (raw.heartbeat && raw.heartbeat.active_tasks > 0) ? `Active tasks: ${raw.heartbeat.active_tasks}` : null,
-      avatar: raw.avatar || '🤖',
-      description: raw.description || '',
-      tasks_completed: raw.tasks_completed || 0,
-      tasks_failed: raw.tasks_failed || 0,
+  _mockResponse(endpoint) {
+    const data = {
+      agents: [
+        { id: 'orchestrator', name: 'Orquestrador', status: 'online', role: 'Orchestrator', capabilities: ['routing', 'coordination'], currentTask: null, avatar: '🎯' },
+        { id: 'architect', name: 'Arquiteto', status: 'busy', role: 'Architect', capabilities: ['architecture', 'design'], currentTask: 'Design microservices architecture', avatar: '🏗️' },
+        { id: 'engineer', name: 'Engenheiro', status: 'online', role: 'Engineer', capabilities: ['coding', 'testing'], currentTask: null, avatar: '⚙️' },
+        { id: 'security', name: 'Seguranca', status: 'online', role: 'Security', capabilities: ['security', 'auth', 'encryption'], currentTask: null, avatar: '🛡️' },
+        { id: 'analyst', name: 'Analista', status: 'busy', role: 'Analyst', capabilities: ['analysis', 'research', 'data'], currentTask: 'Performance bottleneck analysis', avatar: '📊' },
+        { id: 'documenter', name: 'Documentador', status: 'offline', role: 'Documenter', capabilities: ['documentation', 'changelog'], currentTask: null, avatar: '📝' },
+        { id: 'tester', name: 'Tester', status: 'online', role: 'Tester', capabilities: ['testing', 'QA', 'debugging'], currentTask: null, avatar: '🧪' },
+        { id: 'devops', name: 'DevOps', status: 'busy', role: 'DevOps', capabilities: ['CI/CD', 'deploy', 'monitoring'], currentTask: 'Deploy staging environment', avatar: '🚀' }
+      ],
+      'system/status': {
+        status: 'operational',
+        uptime: '72h 34m',
+        memory: { used: 3.2, total: 8, percent: 40 },
+        cpu: { usage: 34, cores: 8 },
+        threads: { active: 12, idle: 28 },
+        version: '0.1.0',
+        startedAt: '2026-07-17T10:00:00Z',
+        taskQueue: { pending: 3, running: 2, completed: 156 },
+        recentActions: [
+          { agent: 'orchestrator', action: 'Task dispatched to Seguranca', time: '30s ago' },
+          { agent: 'analyst', action: 'Analysis completed for Performance Report', time: '2m ago' },
+          { agent: 'devops', action: 'Deployment triggered: staging-v2.1', time: '5m ago' },
+          { agent: 'engineer', action: 'PR #142 merged: auth module', time: '8m ago' },
+          { agent: 'tester', action: 'Test suite passed: 247/247', time: '12m ago' }
+        ],
+        upcomingTasks: [
+          { title: 'Database migration v3', scheduled: '14:30', priority: 'high' },
+          { title: 'Security review: auth module', scheduled: '15:00', priority: 'high' },
+          { title: 'Performance benchmark run', scheduled: '16:00', priority: 'medium' },
+          { title: 'Documentation sync', scheduled: '17:30', priority: 'low' }
+        ]
+      },
+      'system/logs': [
+        { level: 'info', timestamp: '2026-07-20T10:30:00Z', message: 'System health check: OK', module: 'health' },
+        { level: 'warn', timestamp: '2026-07-20T10:25:00Z', message: 'Memory usage at 75% threshold', module: 'monitor' },
+        { level: 'info', timestamp: '2026-07-20T10:20:00Z', message: 'Task #1042 completed: Data export', module: 'tasks' },
+        { level: 'info', timestamp: '2026-07-20T10:15:00Z', message: 'Agent Arquiteto started task: API design review', module: 'agents' },
+        { level: 'error', timestamp: '2026-07-20T10:10:00Z', message: 'Connection pool exhausted, retrying...', module: 'network' },
+        { level: 'warn', timestamp: '2026-07-20T10:05:00Z', message: 'Certificate expiring in 7 days', module: 'security' },
+        { level: 'info', timestamp: '2026-07-20T10:00:00Z', message: 'Task #1040 started: Security scan', module: 'tasks' },
+        { level: 'info', timestamp: '2026-07-20T09:55:00Z', message: 'Agent Documentador saved 3 new memories', module: 'memory' },
+        { level: 'info', timestamp: '2026-07-20T09:50:00Z', message: 'System startup completed', module: 'system' }
+      ],
+      'tasks/queue': {
+        pending: [
+          { id: 'T-1045', title: 'Database migration v3', priority: 'high', created: '10:22', agent: 'arquiteto' },
+          { id: 'T-1044', title: 'Update API documentation', priority: 'low', created: '10:18', agent: 'documentador' },
+          { id: 'T-1043', title: 'Dependency audit', priority: 'medium', created: '10:10', agent: 'seguranca' }
+        ],
+        running: [
+          { id: 'T-1042', title: 'Performance benchmark', priority: 'high', started: '10:05', agent: 'analista' },
+          { id: 'T-1041', title: 'Security scan auth module', priority: 'high', started: '10:00', agent: 'seguranca' }
+        ]
+      }
     };
+    return data[endpoint] || null;
   },
 
-  /** Agents API */
+  _normalizeAgents(agents) {
+    return (agents || []).map(a => ({
+      id: a.id,
+      name: a.name,
+      status: a.status,
+      capabilities: a.capabilities || [],
+      currentTask: a.currentTask || a.current_task || null,
+      avatar: a.avatar || '🤖'
+    }));
+  },
+
   agents: {
-    /**
-     * Get all agents from Kernel API.
-     * @returns {Promise<Array>}
-     */
     async list() {
-      const { ok, data } = await API._request('GET', '/agents');
-      if (ok && data && data.agents) {
-        return data.agents.map(a => API._normalizeAgent(a));
-      }
-      return [...Store.state.agents];
-    },
-
-    /**
-     * Get agent by ID.
-     * @param {number|string} id
-     * @returns {Promise<Object|undefined>}
-     */
-    get(id) {
-      return Promise.resolve(Store.findById('agents', id));
-    },
-
-    create(data) {
-      const agent = { ...data, id: Date.now() };
-      Store.addItem('agents', agent);
-      return Promise.resolve(agent);
-    },
-
-    update(id, data) {
-      Store.updateItem('agents', id, data);
-      return Promise.resolve(Store.findById('agents', id));
-    },
-
-    delete(id) {
-      Store.removeItem('agents', id);
-      return Promise.resolve();
+      const data = await API._fetch('/agents');
+      return API._normalizeAgents(data?.agents || data || []);
     }
   },
 
-  /** Missions API (maps to Kernel API scheduled missions) */
   missions: {
-    /**
-     * Get all missions from Kernel API scheduler.
-     * @returns {Promise<Array>}
-     */
     async list() {
-      const { ok, data } = await API._request('GET', '/scheduler/tasks');
-      if (ok && data && data.missions) {
-        return data.missions.map(m => ({
-          id: m.id || m.name,
-          name: m.name,
-          status: m.enabled ? 'active' : 'pending',
-          progress: m.last_run ? 100 : 0,
-          agents: m.agent_name ? [m.agent_name] : [],
-          priority: 'medium',
-          startDate: m.created_at || null,
-          deadline: null,
-          description: m.description || '',
-        }));
-      }
-      return [...Store.state.missions];
-    },
-    get(id) {
-      return Promise.resolve(Store.findById('missions', id));
-    },
-    create(data) {
-      const mission = { ...data, id: Date.now(), progress: 0, status: 'pending' };
-      Store.addItem('missions', mission);
-      return Promise.resolve(mission);
-    },
-    update(id, data) {
-      Store.updateItem('missions', id, data);
-      return Promise.resolve(Store.findById('missions', id));
-    },
-    delete(id) {
-      Store.removeItem('missions', id);
-      return Promise.resolve();
+      const data = await API._fetch('/missions');
+      return (data?.missions || data || []).map(m => ({
+        id: m.id, name: m.name, status: m.status, progress: m.progress || 0,
+        agents: m.agents || [], priority: m.priority || 'medium',
+        startDate: m.startDate || m.start_date, deadline: m.deadline,
+        description: m.description || ''
+      }));
     }
   },
 
-  /** Tasks API */
-  tasks: {
-    list() {
-      return Promise.resolve([...Store.state.tasks]);
-    },
-    get(id) {
-      return Promise.resolve(Store.findById('tasks', id));
-    },
-    create(data) {
-      const task = { ...data, id: Date.now() };
-      Store.addItem('tasks', task);
-      return Promise.resolve(task);
-    },
-    update(id, data) {
-      Store.updateItem('tasks', id, data);
-      return Promise.resolve(Store.findById('tasks', id));
-    },
-    delete(id) {
-      Store.removeItem('tasks', id);
-      return Promise.resolve();
-    },
-    moveTo(id, column) {
-      Store.updateItem('tasks', id, { column });
-      return Promise.resolve(Store.findById('tasks', id));
-    }
-  },
-
-  /** Memories API */
-  memories: {
-    list() {
-      return Promise.resolve([...Store.state.memories]);
-    },
-    get(id) {
-      return Promise.resolve(Store.findById('memories', id));
-    },
-    create(data) {
-      const memory = { ...data, id: Date.now() };
-      Store.addItem('memories', memory);
-      return Promise.resolve(memory);
-    },
-    search(query) {
-      const q = query.toLowerCase();
-      const results = Store.state.memories.filter(m =>
-        m.title.toLowerCase().includes(q) ||
-        m.content.toLowerCase().includes(q) ||
-        m.tags.some(t => t.toLowerCase().includes(q))
-      );
-      return Promise.resolve(results);
-    }
-  },
-
-  /** Workspaces API */
-  workspaces: {
-    list() {
-      return Promise.resolve([...Store.state.workspaces]);
-    },
-    get(id) {
-      return Promise.resolve(Store.findById('workspaces', id));
-    },
-    create(data) {
-      const ws = { ...data, id: Date.now(), progress: 0, tasks: 0, completedTasks: 0 };
-      Store.addItem('workspaces', ws);
-      return Promise.resolve(ws);
-    }
-  },
-
-  /** Tools API */
-  tools: {
-    list() {
-      return Promise.resolve([...Store.state.tools]);
-    },
-    get(id) {
-      return Promise.resolve(Store.findById('tools', id));
-    }
-  },
-
-  /**
-   * Fetch aggregated dashboard data from Kernel API.
-   * @returns {Promise<Object|null>}
-   */
-  async dashboard() {
-    const { ok, data } = await API._request('GET', '/dashboard');
-    return ok ? data : null;
-  },
-
-  /**
-   * Fetch suggestions from Kernel API.
-   * @returns {Promise<Object|null>}
-   */
   async suggestions() {
-    const { ok, data } = await API._request('GET', '/suggestions');
-    return ok ? data : null;
+    const data = await API._fetch('/suggestions');
+    return data || { suggestions: [] };
+  },
+
+  async dashboard() {
+    return await API._fetch('/system/status');
+  },
+
+  system: {
+    async logs(limit = 50) {
+      const data = await API._fetch(`/system/logs?limit=${limit}`);
+      return data?.logs || data || [];
+    },
+    async status() {
+      return await API._fetch('/system/status');
+    }
+  },
+
+  tasks: {
+    async queue() {
+      const data = await API._fetch('/tasks/queue');
+      return data || { pending: [], running: [] };
+    }
   }
 };
