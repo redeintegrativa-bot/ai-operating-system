@@ -930,6 +930,17 @@ if os.path.isdir(mission_control_path):
     app.mount("/mission-control", StaticFiles(directory=mission_control_path, html=True), name="mission_control")
     logger.info("Mission Control frontend mounted at /mission-control")
 
+# Mount new frontend at /dashboard
+frontend_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "frontend"
+)
+if os.path.isdir(frontend_path):
+    app.mount("/dashboard", StaticFiles(directory=frontend_path, html=True), name="dashboard")
+    logger.info("New Dashboard frontend mounted at /dashboard")
+    # Also serve at root - but we'll use a redirect (API routes take precedence by FastAPI)
+    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="root")
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
