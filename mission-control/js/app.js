@@ -65,11 +65,22 @@ const App = {
     const page = Pages[pageName];
     if (!page || !this._content) return;
 
+    // Unmount previous page if it has unmount
+    if (this._currentPage && this._currentPage.unmount) {
+      this._currentPage.unmount();
+    }
+
     this._content.innerHTML = '';
     const el = page.render();
     if (el) {
       this._content.appendChild(el);
     }
+
+    // Mount new page if it has mount
+    if (page.mount) {
+      page.mount();
+    }
+    this._currentPage = page;
 
     // Scroll to top
     this._content.scrollTop = 0;
