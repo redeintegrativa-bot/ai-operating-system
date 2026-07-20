@@ -175,6 +175,21 @@ cmd_stop() {
 
   rm -f "$PID_FILE"
   log_info "AIOS server stopped"
+
+  local tunnel_pid_file="$AIOS_DIR/tunnel.pid"
+  if [[ -f "$tunnel_pid_file" ]]; then
+    local tp
+    tp=$(cat "$tunnel_pid_file" 2>/dev/null)
+    if [[ -n "$tp" ]] && kill -0 "$tp" 2>/dev/null; then
+      log_step "Stopping Cloudflare tunnel (PID: $tp)..."
+      kill "$tp" 2>/dev/null || true
+      sleep 1
+      rm -f "$tunnel_pid_file"
+      log_info "Tunnel stopped"
+    else
+      rm -f "$tunnel_pid_file"
+    fi
+  fi
 }
 
 cmd_restart() {
