@@ -1,11 +1,18 @@
 /**
  * AIOS Mission Control - API Client
- * HTTP client for the Kernel REST API with mock data fallback.
+ * HTTP + WebSocket client for the AIOS backend with mock fallback.
  */
+
 const API_URL = 'http://localhost:8000/api';
-const MOCK_MODE = false; // set true to always use mock data
+const WS_URL = `ws://localhost:8000/ws`;
+const MOCK_MODE = false;
 
 const API = {
+  _ws: null,
+  _wsConnected: false,
+  _wsSubscribers: {},
+  _wsReconnectTimer: null,
+
   async _fetch(endpoint, options = {}) {
     if (MOCK_MODE) return this._mockResponse(endpoint);
 
@@ -28,14 +35,88 @@ const API = {
     }
   },
 
+  // -----------------------------------------------------------------------
+  // WebSocket real-time connection
+  // -----------------------------------------------------------------------
+
+  wsConnect() {
+    if (this._ws && (this._ws.readyState === WebSocket.OPEN || this._ws.readyState === WebSocket.CONNECTING)) return;
+    try {
+      this._ws = new WebSocket(WS_URL);
+      this._ws.onopen = () => {
+        this._wsConnected = true;
+        console.log('[WS] Connected');
+        if (this._wsSubscribers['*']) {
+          this._wsSubscribers['*'].forEach(fn => fn({ type: 'connected' }));
+        }
+      };
+      this._ws.onclose = () => {
+        this._wsConnected = false;
+        console.log('[WS] Disconnected, reconnecting in 5s');
+        if (this._wsSubscribers['*']) {
+          this._wsSubscribers['*'].forEach(fn => fn({ type: 'disconnected' }));
+        }
+        this._wsReconnectTimer = setTimeout(() => this.wsConnect(), 5000);
+      };
+      this._ws.onerror = (err) => {
+        console.warn('[WS] Error:', err);
+      };
+      this._ws.onmessage = (msg) => {
+        try {
+          const data = JSON.parse(msg.data);
+          const eventType = data.event_type || data.type;
+          if (eventType && this._wsSubscribers[eventType]) {
+            this._wsSubscribers[eventType].forEach(fn => fn(data));
+          }
+          if (eventType && this._wsSubscribers['*']) {
+            this._wsSubscribers['*'].forEach(fn => fn(data));
+          }
+        } catch (e) {}
+      };
+    } catch (e) {
+      console.warn('[WS] Connection failed:', e);
+      this._wsReconnectTimer = setTimeout(() => this.wsConnect(), 10000);
+    }
+  },
+
+  wsDisconnect() {
+    if (this._wsReconnectTimer) clearTimeout(this._wsReconnectTimer);
+    if (this._ws) {
+      this._ws.onclose = null;
+      this._ws.close();
+      this._ws = null;
+    }
+    this._wsConnected = false;
+  },
+
+  wsSubscribe(eventType, callback) {
+    if (!this._wsSubscribers[eventType]) this._wsSubscribers[eventType] = [];
+    this._wsSubscribers[eventType].push(callback);
+    return () => {
+      const arr = this._wsSubscribers[eventType];
+      if (arr) this._wsSubscribers[eventType] = arr.filter(cb => cb !== callback);
+    };
+  },
+
+  wsSend(data) {
+    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+      this._ws.send(typeof data === 'string' ? data : JSON.stringify(data));
+    }
+  },
+
+  // -----------------------------------------------------------------------
+  // Mock fallback data
+  // -----------------------------------------------------------------------
+
   _mockResponse(endpoint) {
+    const baseUrl = (endpoint || '').split('?')[0];
     const data = {
       agents: [
         { id: 'orchestrator', name: 'Orquestrador', status: 'online', role: 'Orchestrator', capabilities: ['routing', 'coordination'], currentTask: null, avatar: '🎯' },
         { id: 'architect', name: 'Arquiteto', status: 'busy', role: 'Architect', capabilities: ['architecture', 'design'], currentTask: 'Design microservices architecture', avatar: '🏗️' },
         { id: 'engineer', name: 'Engenheiro', status: 'online', role: 'Engineer', capabilities: ['coding', 'testing'], currentTask: null, avatar: '⚙️' },
         { id: 'security', name: 'Seguranca', status: 'online', role: 'Security', capabilities: ['security', 'auth', 'encryption'], currentTask: null, avatar: '🛡️' },
-        { id: 'analyst', name: 'Analista', status: 'busy', role: 'Analyst', capabilities: ['analysis', 'research', 'data'], currentTask: 'Performance bottleneck analysis', avatar: '📊' },
+        { id: 'analyst', name: 'Analista', status: 'busy', role: 'Analyst', capabilities: ['analysis', 'data', 'research'], currentTask: 'Performance bottleneck analysis', avatar: '📊' },
         { id: 'documenter', name: 'Documentador', status: 'offline', role: 'Documenter', capabilities: ['documentation', 'changelog'], currentTask: null, avatar: '📝' },
         { id: 'tester', name: 'Tester', status: 'online', role: 'Tester', capabilities: ['testing', 'QA', 'debugging'], currentTask: null, avatar: '🧪' },
         { id: 'devops', name: 'DevOps', status: 'busy', role: 'DevOps', capabilities: ['CI/CD', 'deploy', 'monitoring'], currentTask: 'Deploy staging environment', avatar: '🚀' }
@@ -86,7 +167,7 @@ const API = {
         ]
       }
     };
-    return data[endpoint] || null;
+    return data[baseUrl] || null;
   },
 
   _normalizeAgents(agents) {
@@ -99,6 +180,10 @@ const API = {
       avatar: a.avatar || '🤖'
     }));
   },
+
+  // -----------------------------------------------------------------------
+  // API methods
+  // -----------------------------------------------------------------------
 
   agents: {
     async list() {
