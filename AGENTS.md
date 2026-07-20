@@ -6,6 +6,9 @@ scripts/aios start       # Start API server (port 8080)
 scripts/aios dashboard   # Start + open dashboard in browser
 scripts/aios status      # Show system status
 scripts/aios stop        # Stop server
+scripts/aios build       # Build dashboard (Vite)
+scripts/aios deploy      # Deploy to Vercel (preview)
+scripts/aios deploy --prod  # Deploy to Vercel (production)
 scripts/aios logs        # Tail logs
 ```
 
