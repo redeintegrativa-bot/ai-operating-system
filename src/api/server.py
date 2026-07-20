@@ -930,16 +930,20 @@ if os.path.isdir(mission_control_path):
     app.mount("/mission-control", StaticFiles(directory=mission_control_path, html=True), name="mission_control")
     logger.info("Mission Control frontend mounted at /mission-control")
 
-# Mount new frontend at /dashboard
-frontend_path = os.path.join(
+# Mount React dashboard (built) at /dashboard
+_dashboard_dist = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "frontend"
+    "..", "dashboard", "dist"
 )
-if os.path.isdir(frontend_path):
-    app.mount("/dashboard", StaticFiles(directory=frontend_path, html=True), name="dashboard")
-    logger.info("New Dashboard frontend mounted at /dashboard")
-    # Also serve at root - but we'll use a redirect (API routes take precedence by FastAPI)
-    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="root")
+_dashboard_src = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "..", "frontend"
+)
+_dashboard_path = _dashboard_dist if os.path.isdir(_dashboard_dist) else _dashboard_src
+if os.path.isdir(_dashboard_path):
+    app.mount("/dashboard", StaticFiles(directory=_dashboard_path, html=True), name="dashboard")
+    logger.info("Dashboard frontend mounted at /dashboard (from %s)", _dashboard_path)
+    app.mount("/", StaticFiles(directory=_dashboard_path, html=True), name="root")
 
 # ---------------------------------------------------------------------------
 # CLI
