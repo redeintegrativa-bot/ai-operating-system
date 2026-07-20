@@ -1,0 +1,85 @@
+/* ============================================
+   AIOS Dashboard - Component Styles
+   Cards, badges, tables, modals, kanban, charts,
+   dashboard panels, log viewer, queue, loading
+   ============================================ */
+
+/* --- Status Badges (override basic if more specific) --- */
+.status-online { background: #16a34a22; color: #34d399; border: 1px solid #34d39944; }
+.status-busy { background: #d9770622; color: #fbbf24; border: 1px solid #fbbf2444; }
+.status-offline { background: #6b728022; color: #9ca3af; border: 1px solid #6b728044; }
+.status-away { background: #c884fc22; color: #c084fc; border: 1px solid #c084fc44; }
+.status-pending { background: #60a5fa22; color: #60a5fa; border: 1px solid #60a5fa44; }
+
+/* --- Pill helpers --- */
+.pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 99px; font-size: 0.75rem; background: var(--color-primary-light); color: var(--color-primary); }
+
+/* Badges */
+.notification-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; border-radius: 50%; background: var(--color-danger); color: white; font-size: 0.7rem; font-weight: 700; }
+
+/* --- Progress bars --- */
+.progress-bar { width: 100%; height: 8px; border-radius: 4px; background: var(--color-border); overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 4px; background: var(--color-primary); transition: width 0.6s; }
+.progress-fill.success { background: var(--color-success); }
+.progress-fill.warning { background: var(--color-warning); }
+.progress-fill.danger { background: var(--color-danger); }
+
+/* --- Data table pager (inline) --- */
+.pagination { display: flex; align-items: center; justify-content: center; padding: 16px 0; gap: 4; }
+.pagination button { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); width: 32; height: 32; color: var(--color-text); font-weight: 500; }
+.pagination button:hover { background: var(--color-surface-hover); border-color: var(--color-primary); }
+.pagination button.active { background: var(--color-primary); color: white; border-color: var(--color-primary); }
+.pagination button:disabled { opacity: 0.4; }
+.pagination .page-info { padding: 0 16px; }
+
+/* --- Empty states --- */
+.empty-state { padding: 20px; text-align: center; }
+.empty-icon { font-size: 2.5rem; opacity: 0.15; display: block; margin: 0 auto; }
+.empty-text, .empty-message { color: var(--color-text-muted); font-size: 0.9rem; }
+
+/* --- Modals --- */
+.modal-close { cursor: pointer; background: none; border: none; color: inherit; padding: 0; }
+.modal-backdrop { animation: fadeInBackdrop 0.15s; display: none; }
+
+/* Context Menu */
+.context-menu { position: fixed; z-index: var(--z-tooltip); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 4px; min-width: 180px; box-shadow: var(--shadow-lg); }
+.context-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 14px; border: none; background: none; color: var(--color-text); border-radius: var(--radius-sm); cursor: pointer; }
+.context-menu-item:hover { background: var(--color-primary); color: white; }
+
+/* Popover */
+.popover { position: absolute; z-index: 50; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0; min-width: 220; box-shadow: var(--shadow-lg); }
+.popover-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px; border: none; background: none; color: var(--color-text); border-radius: 0; cursor: pointer; }
+.popover-item:hover { background: var(--color-surface-hover); }
+
+/* Task card */
+.task-card { cursor: pointer; }
+.task-card .card-body { padding: 12px 16px; }
+.task-card-header { display: flex; align-items: center; gap: 8px; }
+.task-card-title { display: block; font-weight: 500; padding: 4px 0; }
+.task-card-assignee { font-size: 0.75rem; color: var(--color-text-secondary); }
+.task-card-footer { display: flex; justify-content: flex-end; }
+
+/* Analytics card */
+.an-card { display: flex; align-items: center; gap: 16px; border-radius: var(--radius-md); padding: 20px; background: var(--color-surface); border: 1px solid var(--color-border); }
+.an-value { font-size: 2rem; font-weight: 700; color: var(--color-primary); }
+.an-label { font-size: 0.9rem; color: var(--color-text-secondary); }
+
+/* Agent card */
+.agent-avatar { font-size: 2.5rem; }
+.agent-capabilities { margin-top: 8px; }
+.agent-capabilities .cap-label { font-weight: 500; display: block; margin-bottom: 4px; font-size: 0.8rem; color: var(--color-text-secondary); }
+.agent-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.agent-tags .tag { padding: 2px 8px; }
+.agent-current-task { margin-top: 8px; }
+.agent-current-task .task-label { font-size: 0.8rem; color: var(--color-text-secondary); margin-right: 8px; }
+
+/* KPI */
+.kpi-value { font-size: 1.8rem; font-weight: 700; }
+.kpi-chart { margin-top: 8px; }
+.kpi-label { font-size: 0.8rem; color: var(--color-text-secondary); }
+
+/* Media queries */
+@media (max-width: 1024px) { .grid-3 {grid-template-columns: repeat(2, 1fr)} }
+@media (max-width: 640px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
