@@ -289,8 +289,10 @@ cmd_tunnel() {
   fi
 
   local action="${1:-start}"
-  local pid_file="$DATA_DIR/tunnel.pid"
+  local pid_file="$AIOS_DIR/tunnel.pid"
   local log_file="$LOG_DIR/tunnel.log"
+
+  ensure_dirs
 
   case "$action" in
     start)
