@@ -40,6 +40,11 @@ export const api = {
 
 export function getWsUrl() {
   if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL
+  if (API_BASE) {
+    const url = new URL(API_BASE)
+    const proto = url.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${proto}//${url.host}/ws`
+  }
   const loc = window.location
   const proto = loc.protocol === 'https:' ? 'wss:' : 'ws:'
   return `${proto}//${loc.host}/ws`
