@@ -7,10 +7,18 @@ scripts/aios dashboard   # Start + open dashboard in browser
 scripts/aios status      # Show system status
 scripts/aios stop        # Stop server
 scripts/aios build       # Build dashboard (Vite)
-scripts/aios deploy      # Deploy to Vercel (preview)
+scripts/aios tunnel      # Start Cloudflare tunnel (exposes local API publicly)
+scripts/aios tunnel stop # Stop tunnel
+scripts/aios deploy      # Deploy dashboard to Vercel (preview)
 scripts/aios deploy --prod  # Deploy to Vercel (production)
 scripts/aios logs        # Tail logs
 ```
+
+## Web Deployment Architecture
+- **Vercel** (https://ai-operating-system-sable.vercel.app): Serves the React dashboard (static files)
+- **Cloudflare Tunnel**: Exposes local API server (port 8080) publicly via `https://*.trycloudflare.com`
+- **Connection**: Dashboard (Vercel) → API (tunnel URL) via `VITE_API_URL` env var embedded at build time
+- **Note**: trycloudflare.com URLs change on each tunnel restart. Use `aios tunnel start` to get a new URL, then `aios deploy --prod` to update Vercel.
 
 ## Dashboard (React + Vite + Tailwind)
 ```bash
@@ -48,6 +56,9 @@ ruff check src/ tests/                              # lint
 - `.env.example` — Environment template
 - Agent modes stored in `.aios/agents/{name}.json`
 - `vercel.json` — Vercel deployment config (builds dashboard, serves from dashboard/dist)
+- `.vercel/project.json` — Vercel project linking (org: redeintegrativa-1029)
+- `.aios/tunnel.pid` — Cloudflare tunnel process tracking
+- `logs/tunnel.log` — Cloudflare tunnel logs
 
 ## Persistence directories
 | Directory | Contents | Auto-pruned |
