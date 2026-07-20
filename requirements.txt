@@ -26,6 +26,7 @@ langchain-community>=0.0.10
 # Web & API
 fastapi>=0.108.0
 uvicorn[standard]>=0.25.0
+websockets>=12.0
 httpx>=0.25.2
 
 # Proxy Support
