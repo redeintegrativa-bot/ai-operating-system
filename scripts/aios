@@ -281,6 +281,82 @@ cmd_deploy() {
   vercel deploy --yes $env_flag 2>&1
 }
 
+cmd_tunnel() {
+  if ! command -v cloudflared &>/dev/null; then
+    log_error "cloudflared not installed. Install with:"
+    printf "  curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64 -o /usr/local/bin/cloudflared && chmod +x /usr/local/bin/cloudflared\n"
+    return 1
+  fi
+
+  local action="${1:-start}"
+  local pid_file="$DATA_DIR/tunnel.pid"
+  local log_file="$LOG_DIR/tunnel.log"
+
+  case "$action" in
+    start)
+      if [[ -f "$pid_file" ]] && kill -0 "$(cat "$pid_file")" 2>/dev/null; then
+        log_warn "Tunnel already running (PID: $(cat "$pid_file"))"
+        return 0
+      fi
+      if ! curl -sf --max-time 2 "$HEALTH_URL" &>/dev/null; then
+        log_error "API server not running. Start with: aios start"
+        return 1
+      fi
+      log_step "Starting Cloudflare tunnel..."
+      setsid cloudflared tunnel --url "http://localhost:$API_PORT" > "$log_file" 2>&1 &
+      echo $! > "$pid_file"
+      sleep 4
+      local url
+      url=$(grep -oP 'https://[a-z0-9-]+\.trycloudflare\.com' "$log_file" 2>/dev/null | head -1)
+      if [[ -n "$url" ]]; then
+        printf "${GREEN}✓${NC} Tunnel live at: ${BOLD}%s${NC}\n" "$url"
+        printf "  API: %s/api/health\n" "$url"
+        printf "  Dashboard: %s/dashboard/\n" "$url"
+        if command -v vercel &>/dev/null && vercel whoami &>/dev/null 2>&1; then
+          cd "$PROJECT_ROOT"
+          vercel env rm VITE_API_URL production --yes 2>/dev/null
+          vercel env add VITE_API_URL production <<< "$url" 2>/dev/null
+          log_info "Updated VITE_API_URL in Vercel"
+          printf "  Redeploy with: ${BOLD}aios deploy --prod${NC}\n"
+        fi
+      else
+        log_warn "Tunnel starting... check logs: aios tunnel logs"
+      fi
+      ;;
+    stop)
+      if [[ -f "$pid_file" ]]; then
+        kill "$(cat "$pid_file")" 2>/dev/null
+        rm -f "$pid_file"
+        log_info "Tunnel stopped"
+      else
+        log_warn "No tunnel running"
+      fi
+      ;;
+    status)
+      if [[ -f "$pid_file" ]] && kill -0 "$(cat "$pid_file")" 2>/dev/null; then
+        printf "${GREEN}Running${NC} (PID: %s)\n" "$(cat "$pid_file")"
+        local url
+        url=$(grep -oP 'https://[a-z0-9-]+\.trycloudflare\.com' "$log_file" 2>/dev/null | tail -1)
+        [[ -n "$url" ]] && printf "  URL: %s\n" "$url"
+      else
+        printf "${RED}Stopped${NC}\n"
+        rm -f "$pid_file" 2>/dev/null
+      fi
+      ;;
+    logs)
+      if [[ -f "$log_file" ]]; then
+        tail -20 "$log_file"
+      else
+        log_warn "No tunnel logs found"
+      fi
+      ;;
+    *)
+      log_error "Usage: aios tunnel [start|stop|status|logs]"
+      return 1
+      ;;
+  esac
+}
+
 cmd_logs() {
   ensure_dirs
 
@@ -319,6 +395,7 @@ cmd_help() {
   printf "  build       Build dashboard (Vite)\n"
   printf "  deploy      Deploy dashboard to Vercel\n"
   printf "  deploy --prod  Deploy to Vercel production\n"
+  printf "  tunnel      Manage Cloudflare tunnel (start|stop|status|logs)\n"
   printf "  help       Show this help message\n"
   printf "\n"
   printf "${BOLD}Options:${NC}\n"
@@ -345,6 +422,7 @@ main() {
     logs)     cmd_logs ;;
     build)    cmd_build ;;
     deploy)   cmd_deploy "${2:-}" ;;
+    tunnel)   cmd_tunnel "${2:-start}" ;;
     help|-h|--help)
               cmd_help ;;
     --version|-v)
