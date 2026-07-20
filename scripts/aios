@@ -246,6 +246,41 @@ cmd_dashboard() {
   fi
 }
 
+cmd_build() {
+  log_step "Building dashboard..."
+  cd "$PROJECT_ROOT/dashboard"
+  if [[ ! -f package.json ]]; then
+    log_error "dashboard/package.json not found"
+    return 1
+  fi
+  npm install 2>&1 | tail -3
+  npm run build 2>&1 | tail -5
+  if [[ -d dist ]]; then
+    log_info "Dashboard built to dashboard/dist/"
+  else
+    log_error "Build failed - no dist/ directory"
+    return 1
+  fi
+}
+
+cmd_deploy() {
+  if ! command -v vercel &>/dev/null; then
+    log_error "Vercel CLI not installed. Install with: npm install -g vercel"
+    return 1
+  fi
+  if ! vercel whoami &>/dev/null 2>&1; then
+    log_error "Not logged in to Vercel. Run: vercel login"
+    return 1
+  fi
+  local env_flag=""
+  if [[ "${1:-}" == "--prod" ]]; then
+    env_flag="--prod"
+  fi
+  log_step "Deploying to Vercel..."
+  cd "$PROJECT_ROOT"
+  vercel deploy --yes $env_flag 2>&1
+}
+
 cmd_logs() {
   ensure_dirs
 
@@ -275,12 +310,15 @@ cmd_help() {
   printf "${BOLD}${CYAN}AIOS CLI${NC} v%s\n\n" "$AIOS_VERSION"
   printf "${BOLD}Usage:${NC} aios <command> [options]\n\n"
   printf "${BOLD}Commands:${NC}\n"
-  printf "  ${GREEN}start${NC}     Start the AIOS API server\n"
-  printf "  ${RED}stop${NC}      Stop the AIOS API server\n"
-  printf "  ${YELLOW}restart${NC}   Restart the AIOS API server\n"
-  printf "  ${BLUE}status${NC}    Show system status and health\n"
-  printf "  ${CYAN}dashboard${NC} Start services and open dashboard\n"
-  printf "  logs       Tail recent log output\n"
+  printf "  ${GREEN}start${NC}      Start the AIOS API server\n"
+  printf "  ${RED}stop${NC}       Stop the AIOS API server\n"
+  printf "  ${YELLOW}restart${NC}    Restart the AIOS API server\n"
+  printf "  ${BLUE}status${NC}     Show system status and health\n"
+  printf "  ${CYAN}dashboard${NC}  Start services and open dashboard\n"
+  printf "  logs        Tail recent log output\n"
+  printf "  build       Build dashboard (Vite)\n"
+  printf "  deploy      Deploy dashboard to Vercel\n"
+  printf "  deploy --prod  Deploy to Vercel production\n"
   printf "  help       Show this help message\n"
   printf "\n"
   printf "${BOLD}Options:${NC}\n"
