@@ -794,7 +794,132 @@ async def update_settings(payload: dict):
     return {"status": "ok"}
 
 # ---------------------------------------------------------------------------
-# Mission Control Static Files
+# Additional Dashboard Endpoints: workspaces, missions, tools, marketplace, etc.
+# ---------------------------------------------------------------------------
+
+@app.get("/api/workspaces")
+async def get_workspaces():
+    return [
+        {"id": "ws-1", "name": "AIOS Core Development", "description": "Main workspace for AIOS core system", "status": "active", "projects": 5, "members": 8, "last_updated": "2026-07-20"},
+        {"id": "ws-2", "name": "Dashboard Frontend", "description": "Mission Control dashboard SPA", "status": "active", "projects": 3, "members": 4, "last_updated": "2026-07-19"},
+        {"id": "ws-3", "name": "Integration Testing", "description": "Test harness and integration tests", "status": "active", "projects": 2, "members": 3, "last_updated": "2026-07-18"},
+    ]
+
+@app.get("/api/missions")
+async def get_missions():
+    return [
+        {"id": "ms-1", "name": "Sistema Login OAuth2", "status": "en_cours", "description": "Implementar autenticacao OAuth2 completa", "totalTasks": 8, "completedTasks": 3},
+        {"id": "ms-2", "name": "Schema Banco de Dados", "status": "terminee", "description": "Definir schema e migracoes", "totalTasks": 5, "completedTasks": 5},
+        {"id": "ms-3", "name": "API REST v2", "status": "en_cours", "description": "Nova versao da API com WebSockets", "totalTasks": 12, "completedTasks": 7},
+        {"id": "ms-4", "name": "Montagem Cluster k8s", "status": "a_venir", "description": "Cluster Kubernetes em producao", "totalTasks": 10, "completedTasks": 0},
+        {"id": "ms-5", "name": "Migration CORE 3.0", "status": "a_faire", "description": "Migracao para nova arquitetura", "totalTasks": 10, "completedTasks": 0},
+        {"id": "ms-6", "name": "PenTest 2026", "status": "a_faire", "description": "Teste de penetracao anual", "totalTasks": 2, "completedTasks": 0},
+    ]
+
+@app.get("/api/tools")
+async def get_tools():
+    return [
+        {"name": "Scanner de portas", "description": "Mapeia portas abertas em hosts", "category": "network", "complexity": "Medium", "icon": "📡"},
+        {"name": "Gerador de hash", "description": "Gera hash MD5/SHA256/SHA512", "category": "crypto", "complexity": "Beginner", "icon": "🔐"},
+        {"name": "Codifier", "description": "Codifica/decodifica em Base64/URL/Hex", "category": "crypto", "input": "text", "icon": "🔢", "complexity": "Beginner"},
+        {"name": "Analyzer", "description": "Analisa sentimentos de textos", "category": "text", "input": "file", "icon": "📊", "complexity": "Medium"},
+        {"name": "JFormatter", "description": "Pretty-print e colapsa JSON", "category": "utility", "input": "text", "icon": "📦", "complexity": "Easy"},
+        {"name": "CSS Extractor", "description": "Extrai CSS inline de HTML", "category": "utility", "input": "text", "icon": "🎨", "complexity": "Medium"},
+        {"name": "Email Validator", "description": "Valida sintaxe de e-mails", "category": "valid", "input": "text", "icon": "✉️", "complexity": "Easy"},
+        {"name": "QR Generator", "description": "Gera QR codes a partir de texto", "category": "media", "input": "text", "icon": "📱", "complexity": "Medium"},
+        {"name": "PDF Combiner", "description": "Combina multiplos PDFs em um só", "category": "utility", "input": "file", "icon": "📄", "complexity": "Medium"},
+        {"name": "Color Converter", "description": "Converte entre formatos de cores", "category": "utility", "input": "text", "icon": "🎨", "complexity": "Easy"},
+    ]
+
+@app.get("/api/marketplace")
+async def get_marketplace():
+    return [
+        {"id": "mk-1", "name": "Widget de Clima", "description": "Exibe clima e previsao para 7 dias", "category": "Widget", "vendor": "AIOS", "rating": 4.5, "likes": 89},
+        {"id": "mk-2", "name": "Analytics Pro", "description": "Painel avancado de metricas", "category": "Analytics", "vendor": "AIOS", "rating": 1.8, "likes": 213},
+        {"id": "mk-3", "name": "Data Export", "description": "Exporta dados para CSV/JSON/Excel", "category": "Data", "vendor": "Acme", "rating": 5.0, "likes": 57},
+        {"id": "mk-4", "name": "Dark UI Theme", "description": "Tema escuro alternativo", "category": "Widget", "vendor": "Acme", "rating": 3.0, "likes": 32},
+        {"id": "mk-5", "name": "Custom Dashboard", "description": "Cria dashboards customizados", "category": "Widget", "vendor": "AIOS", "rating": 5.5, "likes": 77},
+        {"id": "mk-6", "name": "Report Generator", "description": "Gera relatorios em PDF", "category": "Template", "vendor": "AIOS", "rating": 4.0, "likes": 24},
+        {"id": "mk-7", "name": "Slack Connector", "description": "Integracao com Slack (notificacoes)", "category": "Service", "vendor": "Acme", "rating": 4.0, "likes": 43},
+        {"id": "mk-8", "name": "Translation pack", "description": "Pacote de tradução (10 idiomas)", "category": "Service", "vendor": "AIOS", "rating": 5.0, "likes": 31},
+    ]
+
+@app.get("/api/finances")
+async def get_finances():
+    return {
+        "transactions": [
+            {"id": "ft-1", "description": "Pagamento servidores", "amount": 2300, "category": "expense", "date": "2026-07-01"},
+            {"id": "ft-2", "description": "Assinatura A-NET", "amount": 149, "category": "expense", "date": "2026-07-05"},
+            {"id": "ft-3", "description": "Recebimento cliente X", "amount": 5000, "category": "income", "date": "2026-07-10"},
+            {"id": "ft-4", "description": "Licenca software", "amount": 800, "category": "expense", "date": "2026-07-12"},
+            {"id": "ft-5", "description": "Servicos consultoria", "amount": 2500, "category": "income", "date": "2026-07-15"},
+            {"id": "ft-6", "description": "Renovacao dominio", "amount": 120, "category": "expense", "date": "2026-07-18"},
+            {"id": "ft-7", "description": "Hosting mensal", "amount": 299, "category": "expense", "date": "2026-07-20"},
+            {"id": "ft-8", "description": "Projeto especial beta", "amount": 4200, "category": "income", "date": "2026-07-03"},
+            {"id": "ft-9", "description": "Manutencao equipamentos", "amount": 670, "category": "expense", "date": "2026-07-18"},
+            {"id": "ft-10", "description": "Recebimento servicos cloud", "amount": 1800, "category": "income", "date": "2026-07-19"},
+        ],
+        "total_income": 13500,
+        "total_expense": 4338,
+        "balance": 9162
+    }
+
+@app.get("/api/analytics")
+async def get_analytics():
+    return {
+        "users": 163,
+        "active_sessions": 24,
+        "total_requests": 2410,
+        "uptime_rate": 99.2,
+        "daily_requests": [120, 135, 142, 118, 155, 168, 143, 157, 139, 148, 162, 171, 155, 149, 172, 181, 143, 159, 145, 166, 174, 158, 152, 169, 178, 183, 166, 175, 169, 172],
+        "top_habits": ["Debugging", "Code Review", "Prompt Engineering", "System Design"],
+        "top_agents": ["Osculador", "Arquiteto", "Engenheiro", "Pesquisador"],
+        "error_count": 12,
+    }
+
+# TaskCenter extended endpoints
+@app.get("/api/taskcenter")
+async def taskcenter_list(
+    status: Optional[str] = Query(None),
+    priority: Optional[str] = Query(None),
+    agent: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=1000)
+):
+    tm = _get_task_manager()
+    tasks = tm.list_all_tasks()
+    if status:
+        try:
+            tasks = [t for t in tasks if t.status == TaskStatus(status)]
+        except ValueError:
+            pass
+    if priority:
+        try:
+            tasks = [t for t in tasks if t.priority == TaskPriority(priority)]
+        except ValueError:
+            pass
+    if agent:
+        tasks = [t for t in tasks if t.assigned_agent == agent]
+    tasks.sort(key=lambda t: t.created_at, reverse=True)
+    return {"tasks": [_task_to_detail(t) for t in tasks[:limit]]}
+
+@app.get("/api/taskcenter/{task_id}")
+async def taskcenter_get(task_id: str):
+    return await get_task(task_id)
+
+@app.post("/api/taskcenter")
+async def taskcenter_create(task: TaskCreate):
+    return await create_task(task)
+
+@app.put("/api/taskcenter/{task_id}")
+async def taskcenter_update(task_id: str, update: TaskUpdate):
+    return await update_task(task_id, update)
+
+@app.delete("/api/taskcenter/{task_id}")
+async def taskcenter_delete(task_id: str):
+    return await delete_task(task_id)
+
+# ---------------------------------------------------------------------------
+# Mission Control & New Frontend Static Files
 # ---------------------------------------------------------------------------
 
 mission_control_path = os.path.join(
