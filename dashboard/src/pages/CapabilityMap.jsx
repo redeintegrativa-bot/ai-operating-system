@@ -2,33 +2,57 @@ import { useState, useEffect } from 'react'
 import { api } from '../api/client'
 import PageHeader from '../components/PageHeader'
 import StatusBadge from '../components/StatusBadge'
-import { Map } from 'lucide-react'
+import { Map, Box, Cpu, Globe, Wrench } from 'lucide-react'
+
+const catIcons = { core: Cpu, agents: Box, api: Globe, utils: Wrench }
 
 export default function CapabilityMap() {
-  const [capabilities, setCapabilities] = useState([])
+  const [caps, setCaps] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.getCapabilities().then(d => setCapabilities(Array.isArray(d) ? d : d?.capabilities || [])).catch(() => {}).finally(() => setLoading(false))
+    api.getCapabilities().then(d => setCaps(d)).catch(() => {}).finally(() => setLoading(false))
   }, [])
+
+  const categories = caps?.categories || {}
+  const totalCaps = caps?.totalCapabilities || 0
 
   return (
     <div>
-      <PageHeader title="Capability Map" subtitle="System capabilities and their status" actions={<Map className="w-5 h-5 text-primary-600" />} />
+      <PageHeader
+        title="Capability Map"
+        subtitle={`${totalCaps} capabilities across ${Object.keys(categories).length} categories`}
+        actions={<Map className="w-5 h-5 text-primary-600" />}
+      />
       {loading ? <p className="text-gray-400">Loading...</p> : (
-        capabilities.length ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {capabilities.map((c, i) => (
-              <div key={c.name || i} className="card">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold">{c.name || c.title}</h3>
-                  <StatusBadge status={c.status || 'info'} />
+        <div className="space-y-6">
+          {Object.entries(categories).map(([key, cat]) => {
+            const Icon = catIcons[key] || Box
+            return (
+              <div key={key}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon className="w-5 h-5 text-primary-600" />
+                  <h2 className="text-lg font-semibold">{cat.label}</h2>
+                  <span className="text-xs text-gray-400 ml-2">{cat.items?.length || 0} items</span>
                 </div>
-                <p className="text-sm text-gray-500">{c.description || 'No description'}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {(cat.items || []).map((item) => (
+                    <div key={item.id} className="card py-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-medium text-sm">{item.name}</h3>
+                          <p className="text-xs text-gray-500 mt-1">{item.description}</p>
+                        </div>
+                        <StatusBadge status={item.status === 'implementado' ? 'online' : item.status === 'parcial' ? 'warning' : 'offline'} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        ) : <p className="text-gray-400 text-center py-12">No capabilities found</p>
+            )
+          })}
+          {!Object.keys(categories).length && <p className="text-gray-400 text-center py-12">No capabilities found</p>}
+        </div>
       )}
     </div>
   )
