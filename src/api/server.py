@@ -943,7 +943,11 @@ _dashboard_path = _dashboard_dist if os.path.isdir(_dashboard_dist) else _dashbo
 if os.path.isdir(_dashboard_path):
     app.mount("/dashboard", StaticFiles(directory=_dashboard_path, html=True), name="dashboard")
     logger.info("Dashboard frontend mounted at /dashboard (from %s)", _dashboard_path)
-    app.mount("/", StaticFiles(directory=_dashboard_path, html=True), name="root")
+
+    @app.get("/")
+    async def root_redirect():
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/dashboard/")
 
 # ---------------------------------------------------------------------------
 # CLI
