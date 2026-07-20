@@ -343,6 +343,8 @@ main() {
     status)   cmd_status ;;
     dashboard|dash) cmd_dashboard ;;
     logs)     cmd_logs ;;
+    build)    cmd_build ;;
+    deploy)   cmd_deploy "${2:-}" ;;
     help|-h|--help)
               cmd_help ;;
     --version|-v)
