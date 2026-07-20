@@ -61,8 +61,14 @@ check_python() {
     if [[ -f "$PROJECT_ROOT/requirements.txt" ]]; then
       log_info "Run: $PYTHON -m pip install -r requirements.txt"
     else
-      log_info "Run: $PYTHON -m pip install fastapi uvicorn"
+      log_info "Run: $PYTHON -m pip install fastapi uvicorn websockets"
     fi
+    return 1
+  fi
+
+  if ! "$PYTHON" -c "import websockets" 2>/dev/null; then
+    log_warn "websockets not found. WebSocket will not work."
+    log_info "Run: $PYTHON -m pip install websockets"
     return 1
   fi
 
@@ -123,7 +129,8 @@ cmd_start() {
   local log_file="$LOG_DIR/aios-$(date +%Y%m%d-%H%M%S).log"
 
   cd "$PROJECT_ROOT"
-  "$PYTHON" -m src.api.server --port "$API_PORT" > "$log_file" 2>&1 &
+  export PYTHONPATH="$PROJECT_ROOT"
+  setsid "$PYTHON" -m src.api.server --port "$API_PORT" > "$log_file" 2>&1 &
   local pid=$!
   echo "$pid" > "$PID_FILE"
 
