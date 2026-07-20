@@ -149,15 +149,18 @@
   overflow: hidden;
   margin-top: 8px;
 }
-.progress-bar .progress-fill {
+.progress-bar .progress-fill,
+.progress-bar .progress-bar-fill {
   height: 100%;
   border-radius: 3px;
   background: linear-gradient(90deg, var(--color-primary), #60a5fa);
   transition: width 0.3s ease;
   min-width: 2px;
 }
-.progress-bar .progress-fill.completed { background: linear-gradient(90deg, var(--color-success), #4ade80); }
-.progress-bar .progress-fill.warning { background: linear-gradient(90deg, #eab308, #fbbf24); }
+.progress-bar .progress-fill.completed,
+.progress-bar .progress-bar-fill.completed { background: linear-gradient(90deg, var(--color-success), #4ade80); }
+.progress-bar .progress-fill.warning,
+.progress-bar .progress-bar-fill.warning { background: linear-gradient(90deg, #eab308, #fbbf24); }
 
 /* --- Metric Tile --- */
 .metric-tile {
@@ -515,12 +518,22 @@
   padding: 32px 16px;
   color: var(--color-text-muted);
 }
-.empty-state .empty-icon {
+.empty-state .empty-icon,
+.empty-state .empty-state-icon {
   font-size: 36px;
   margin-bottom: 8px;
   opacity: 0.5;
 }
-.empty-state .empty-text { font-size: 14px; }
+.empty-state .empty-text,
+.empty-state .empty-state-text {
+  font-size: 14px;
+}
+.empty-state .empty-state-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--color-text);
+}
 
 /* --- Notification --- */
 .notification-tag {
