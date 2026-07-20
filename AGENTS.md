@@ -2,69 +2,68 @@
 
 ## Quick start
 ```bash
-python -m src.core.system [--status] [--task "..."] [--interactive]
-python -m src.core.orchestrator [--status] [--route "desc"] [--execute "desc"]
-python -m src.core.kernel status
-python -m src.api.server --port 8080
-python -m src.api.kernel_api --port 8000
+scripts/aios start       # Start API server (port 8080)
+scripts/aios dashboard   # Start + open dashboard in browser
+scripts/aios status      # Show system status
+scripts/aios stop        # Stop server
+scripts/aios logs        # Tail logs
 ```
 
-## Python commands (single test, package, verification)
+## Dashboard (React + Vite + Tailwind)
 ```bash
-pytest tests/ -v                                     # all tests (default: -v --tb=short via pytest.ini)
-pytest tests/test_orchestrator.py -v                 # single file
-pytest tests/test_orchestrator.py::test_route_task   # single test
-pytest --cov=src --cov-report=html                   # coverage
-pytest -m "not integration"                          # skip slow/integration
-ruff check src/ tests/                               # lint (ruff)
-ruff format src/ tests/                              # format (ruff)
+cd dashboard && npm install && npm run dev   # Dev server (Vite, port 5173)
+cd dashboard && npm run build                # Build to dashboard/dist/
+```
+- 14 pages: Home, Mission Control, Capability Map, AI Chat, Agents, Tasks, Memory, Scheduler, Plugins, Integrations, DeFi Intelligence, Logs, Settings, System Status
+- WebSocket: `ws://localhost:8080/ws` — subscribe via `{"type":"subscribe","events":["*"]}`
+- API proxy: Vite dev server proxies `/api` and `/ws` to localhost:8080
+- For Vercel: `npm run build` outputs to `dashboard/dist/`, configured via `vercel.json`
+- For local use: FastAPI serves `dashboard/dist/` at `/dashboard/` (auto-detected)
+
+## API endpoints (port 8080)
+All under `/api/`: `status`, `metrics`, `health`, `system`, `agents`, `tasks`, `memory/:agent`, `logs`, `plugins`, `capabilities`, `settings`, `skills`, `suggestions`, `workspaces`, `missions`, `tools`, `marketplace`, `finances`, `analytics`, `taskcenter`
+WebSocket at `/ws`
+
+## Python commands
+```bash
+pytest tests/ -v                                    # all tests (default: -v --tb=short via pytest.ini)
+pytest tests/test_orchestrator.py::test_route_task  # single test
+pytest -m "not integration and not slow"            # skip slow/integration
+ruff check src/ tests/                              # lint
 ```
 
 ## Architecture
-
-- **Event-driven multi-agent system**: Agents communicate via `EventBus` (pub/sub), coordinated by `Orchestrator` (keyword-based routing). Also has `AIOSKernel` (AgentManager, HeartbeatMonitor, Scheduler).
-- **System entrypoint**: `AIOS` class in `src/core/system.py` — initializes all subsystems, loads persisted state, runs context refresh and memory pruning on startup. Use `python -m src.core.system` to start.
-- **Agent factory** in `src/agents/__init__.py` — `create_agent(type, project_root)` and `create_all_agents(project_root)` with `AGENT_REGISTRY` dict. Agent names: orchestrator, architect, engineer, researcher, ai_specialist, automation, database, security, browser. Note: `crypto_researcher/` exists on disk but is not registered.
-- **Two routing layers**: The `Orchestrator` class in `src/core/orchestrator.py` routes via keyword matching against agent capabilities (`DEFAULT_AGENTS`). The `AIOSKernel` in `src/core/kernel.py` has its own `AgentConfig`/`AgentMode` system stored in `.aios/agents/`. They are separate — kernel integrates with orchestrator via `set_orchestrator()`.
-- **Core modules**: `system.py` (entrypoint), `kernel.py`, `orchestrator.py`, `events.py` (EventBus), `task_manager.py`, `memory.py`, `monitoring.py`, `suggestions.py`.
-- **API** has two servers: `src/api/server.py` (FastAPI, port 8080) and `src/api/kernel_api.py` (JSON API for Mission Control, port 8000). Client library at `src/api/client.py`.
+- **Event-driven multi-agent system**: EventBus (pub/sub) + Orchestrator (keyword routing) + AIOSKernel (AgentManager, HeartbeatMonitor, Scheduler)
+- **Entrypoint**: `AIOS` class in `src/core/system.py` — `python -m src.core.system`
+- **Agent factory**: `src/agents/__init__.py` — `AGENT_REGISTRY` dict. Agents: orchestrator, architect, engineer, researcher, ai_specialist, automation, database, security, browser. Note: `crypto_researcher/` exists on disk but is not registered.
+- **Two routing layers**: `Orchestrator` (src/core/orchestrator.py) routes via keyword matching. `AIOSKernel` (src/core/kernel.py) has its own AgentConfig/AgentMode in `.aios/agents/`. Connected via `set_orchestrator()`.
+- **Two API servers**: `src/api/server.py` (FastAPI, port 8080, serves dashboard) and `src/api/kernel_api.py` (JSON, port 8000)
+- **WebSocket**: `src/api/websocket_server.py` — EventBus-to-WebSocket bridge, clients subscribe to events
 
 ## Key config files
-- `config/default.json` — System settings (LLM providers, Redis, agents_config, etc.)
-- `config/agents.yaml` — Agent definitions (stub)
+- `config/default.json` — System settings (LLM providers, Redis, agents_config)
 - `.env.example` — Environment template
-- Configs for agent modes stored per-agent in `.aios/agents/{name}.json`
-
-## Context system
-- `context/scripts/reconstruct_context.py` — Scans project, analyzes git, reads config, generates `context/generated/project_snapshot.json` and `context_summary.md`
-- `context/scripts/load_context.py` — Loads context with levels: `full`, `summary`, `minimal`; auto-regenerates if stale (>5 min)
-- `context/scripts/context_integration.py` — Hooks for orchestrator: `pre_task_hook()`, `post_task_hook()`, `get_context_for_agent()`
-- `context/scripts/generate_context.py` — Generates context from templates with `{{variable}}` placeholders
-- On startup, `AIOS.start()` runs `reconstruct_context.py` automatically
+- Agent modes stored in `.aios/agents/{name}.json`
+- `vercel.json` — Vercel deployment config (builds dashboard, serves from dashboard/dist)
 
 ## Persistence directories
-| Directory | Contents | Auto-pruned on startup |
-|-----------|----------|-----------------------|
-| `memory/agents/*.json` | Agent memories (Episodic, Semantic, Procedural) | Memories >90d stale |
-| `.aios/agents/*.json` | Kernel AgentConfig per agent | No |
-| `.aios/suggestions/inbox.json` | Suggestion inbox | No |
+| Directory | Contents | Auto-pruned |
+|-----------|----------|-------------|
+| `memory/agents/*.json` | Agent memories | >90d stale |
+| `.aios/agents/*.json` | Kernel AgentConfig | No |
 | `.task_manager/tasks.json` | TaskManager state | Tasks >7d completed |
-| `context/generated/` | Project snapshot, summary | Regenerated on startup |
+| `context/generated/` | Project snapshot | Regenerated on startup |
 | `logs/` | Rotating logs | No |
-| `metrics/` | Metric exports | No |
 
 ## Testing quirks
 - Pytest markers: `integration` (real websites), `slow` (network-dependent)
-- Skip slow/integration: `pytest -m "not integration and not slow"`
 - Browser agent tests require Playwright: `pip install playwright && playwright install chromium`
 - `task_manager` persists state to `.task_manager/` — clean between test runs
 
 ## Caveats & gotchas
-- Several modules were **stubs** and are now implemented: `system.py` (full AIOS entrypoint), `config_manager.py` (JSON+env config), `logger.py` (structured JSON logging with rotation)
-- Still stubs: `message_bus.py`, `agent_registry.py`, `scripts/setup.sh`, `scripts/start.sh`, `config/settings.py`
-- `src/providers/` has DeFi data providers (coingecko, defillama, dexscreener, l2beat, etc.) — not wired into agents yet
-- `src/intelligence/market_intelligence.py` — market analysis module
-- `frontend/` and `mission-control/` are static web UIs (HTML/CSS/JS, no build step)
-- Two separate `Task`/`TaskStatus` dataclasses: `core/orchestrator.py` (simpler) and `core/task_manager.py` (richer, persistent)
-- Two separate `AgentStatus` enums: `core/orchestrator.py` (IDLE/BUSY/FAILED) and `agents/base_agent.py` (+OFFLINE)
-- Backup daemon (`scripts/auto_backup.sh`) auto-pushes commits — be aware when testing
+- Stubs: `message_bus.py`, `agent_registry.py`, `scripts/setup.sh`, `scripts/start.sh`, `config/settings.py`
+- `src/providers/` has DeFi data providers (coingecko, defillama, etc.) — not wired into agents yet
+- Two separate `Task`/`TaskStatus` dataclasses: `core/orchestrator.py` vs `core/task_manager.py`
+- Two separate `AgentStatus` enums: `core/orchestrator.py` vs `agents/base_agent.py`
+- Backup daemon (`scripts/auto_backup.sh`) auto-pushes commits — aware when testing
+- Dashboard: `frontend/` is legacy HTML/CSS/JS; `dashboard/` is the React app (use this)
