@@ -11,19 +11,20 @@ python -m src.api.kernel_api --port 8000
 
 ## Python commands (single test, package, verification)
 ```bash
-pytest tests/ -v                                     # all tests
+pytest tests/ -v                                     # all tests (default: -v --tb=short via pytest.ini)
 pytest tests/test_orchestrator.py -v                 # single file
 pytest tests/test_orchestrator.py::test_route_task   # single test
 pytest --cov=src --cov-report=html                   # coverage
 pytest -m "not integration"                          # skip slow/integration
 ruff check src/ tests/                               # lint (ruff)
+ruff format src/ tests/                              # format (ruff)
 ```
 
 ## Architecture
 
 - **Event-driven multi-agent system**: Agents communicate via `EventBus` (pub/sub), coordinated by `Orchestrator` (keyword-based routing). Also has `AIOSKernel` (AgentManager, HeartbeatMonitor, Scheduler).
 - **System entrypoint**: `AIOS` class in `src/core/system.py` — initializes all subsystems, loads persisted state, runs context refresh and memory pruning on startup. Use `python -m src.core.system` to start.
-- **Agent factory** in `src/agents/__init__.py` — `create_agent(type, root)` and `create_all_agents(root)` with `AGENT_REGISTRY` dict. Agent names: orchestrator, architect, engineer, researcher, ai_specialist, automation, database, security, browser.
+- **Agent factory** in `src/agents/__init__.py` — `create_agent(type, project_root)` and `create_all_agents(project_root)` with `AGENT_REGISTRY` dict. Agent names: orchestrator, architect, engineer, researcher, ai_specialist, automation, database, security, browser. Note: `crypto_researcher/` exists on disk but is not registered.
 - **Two routing layers**: The `Orchestrator` class in `src/core/orchestrator.py` routes via keyword matching against agent capabilities (`DEFAULT_AGENTS`). The `AIOSKernel` in `src/core/kernel.py` has its own `AgentConfig`/`AgentMode` system stored in `.aios/agents/`. They are separate — kernel integrates with orchestrator via `set_orchestrator()`.
 - **Core modules**: `system.py` (entrypoint), `kernel.py`, `orchestrator.py`, `events.py` (EventBus), `task_manager.py`, `memory.py`, `monitoring.py`, `suggestions.py`.
 - **API** has two servers: `src/api/server.py` (FastAPI, port 8080) and `src/api/kernel_api.py` (JSON API for Mission Control, port 8000). Client library at `src/api/client.py`.
@@ -60,7 +61,10 @@ ruff check src/ tests/                               # lint (ruff)
 
 ## Caveats & gotchas
 - Several modules were **stubs** and are now implemented: `system.py` (full AIOS entrypoint), `config_manager.py` (JSON+env config), `logger.py` (structured JSON logging with rotation)
-- Still stubs: `message_bus.py`, `agent_registry.py`, scripts/*.sh, `config/settings.py`
+- Still stubs: `message_bus.py`, `agent_registry.py`, `scripts/setup.sh`, `scripts/start.sh`, `config/settings.py`
+- `src/providers/` has DeFi data providers (coingecko, defillama, dexscreener, l2beat, etc.) — not wired into agents yet
+- `src/intelligence/market_intelligence.py` — market analysis module
+- `frontend/` and `mission-control/` are static web UIs (HTML/CSS/JS, no build step)
 - Two separate `Task`/`TaskStatus` dataclasses: `core/orchestrator.py` (simpler) and `core/task_manager.py` (richer, persistent)
 - Two separate `AgentStatus` enums: `core/orchestrator.py` (IDLE/BUSY/FAILED) and `agents/base_agent.py` (+OFFLINE)
 - Backup daemon (`scripts/auto_backup.sh`) auto-pushes commits — be aware when testing
