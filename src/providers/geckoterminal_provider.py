@@ -61,7 +61,7 @@ class GeckoTerminalProvider(BaseDefiProvider):
                 return response.json()
 
             elif query_type == "simple_price":
-                network = kwargs.get("network", "ethereum")
+                network = self._resolve_chain(kwargs.get("network", "ethereum"))
                 addresses = kwargs.get("addresses", "")
                 response = requests.get(
                     f"{base_url}/simple/networks/{network}/token_price/{addresses}",
@@ -71,7 +71,7 @@ class GeckoTerminalProvider(BaseDefiProvider):
                 return response.json()
 
             elif query_type == "top_pools":
-                chain = kwargs.get("chain", "ethereum")
+                chain = self._resolve_chain(kwargs.get("chain", "ethereum"))
                 response = requests.get(
                     f"{base_url}/networks/{chain}/pools",
                     timeout=kwargs.get("timeout", 10),
@@ -80,7 +80,7 @@ class GeckoTerminalProvider(BaseDefiProvider):
                 return response.json()
 
             else:
-                chain = kwargs.get("chain", "ethereum")
+                chain = self._resolve_chain(kwargs.get("chain", "ethereum"))
                 response = requests.get(
                     f"{base_url}/networks/{chain}/trending_pools",
                     timeout=kwargs.get("timeout", 10),
