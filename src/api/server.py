@@ -956,6 +956,58 @@ async def defi_top_pools(chain: str = Query("ethereum")):
     except Exception as e:
         return {"error": str(e), "pools": []}
 
+@app.get("/api/defi/pool-detail")
+async def defi_pool_detail(
+    chain: str = Query("eth"),
+    pool_address: str = Query(""),
+    timeframe: str = Query("day"),
+):
+    import requests as req
+    result = {"info": {}, "ohlcv": [], "error": None}
+    try:
+        base = "https://api.geckoterminal.com/api/v2"
+        def _get(url):
+            r = req.get(url, timeout=8)
+            if r.status_code == 429:
+                return None
+            r.raise_for_status()
+            return r.json()
+
+        info = await asyncio.to_thread(_get, f"{base}/networks/{chain}/pools/{pool_address}")
+        if info:
+            attrs = info.get("data", {}).get("attributes", {})
+            result["info"] = {
+                "name": attrs.get("name", ""),
+                "base_token_price_usd": attrs.get("base_token_price_usd", "0"),
+                "quote_token_price_usd": attrs.get("quote_token_price_usd", "0"),
+                "reserve_in_usd": attrs.get("reserve_in_usd", "0"),
+                "volume_usd": attrs.get("volume_usd", {}),
+                "price_change_percentage": attrs.get("price_change_percentage", {}),
+                "transactions": attrs.get("transactions", {}),
+                "fdv_usd": attrs.get("fdv_usd", "0"),
+                "market_cap_usd": attrs.get("market_cap_usd", "0"),
+                "pool_created_at": attrs.get("pool_created_at", ""),
+                "dex_id": info.get("data", {}).get("relationships", {}).get("dex", {}).get("data", {}).get("id", ""),
+                "network_id": info.get("data", {}).get("relationships", {}).get("network", {}).get("data", {}).get("id", ""),
+            }
+
+        ohlcv = await asyncio.to_thread(_get, f"{base}/networks/{chain}/pools/{pool_address}/ohlcv/{timeframe}?aggregate=60&limit=100")
+        if ohlcv:
+            for candle in ohlcv.get("data", []):
+                a = candle.get("attributes", {})
+                result["ohlcv"].append({
+                    "t": a.get("timestamp", 0),
+                    "o": float(a.get("o", 0)),
+                    "h": float(a.get("h", 0)),
+                    "l": float(a.get("l", 0)),
+                    "c": float(a.get("c", 0)),
+                    "v": float(a.get("v", 0)),
+                })
+    except Exception as e:
+        result["error"] = str(e)
+
+    return result
+
 @app.get("/api/defi/hot-pairs")
 async def defi_hot_pairs(query: str = Query("USDC")):
     from src.providers.dexscreener_provider import DexScreenerProvider
