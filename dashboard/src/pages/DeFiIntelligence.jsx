@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { api } from '../api/client'
 import PageHeader from '../components/PageHeader'
+import PoolDetail from '../components/PoolDetail'
 import {
   Coins, TrendingUp, TrendingDown, Droplets, ExternalLink,
   RefreshCw, Zap, BarChart3, Activity, Search, Layers, Brain,
@@ -121,6 +122,7 @@ export default function DeFiIntelligence() {
   const [intel, setIntel] = useState({})
   const [prices, setPrices] = useState([])
   const [overview, setOverview] = useState({})
+  const [selectedPool, setSelectedPool] = useState(null)
 
   const fetchAll = useCallback(() => {
     setRefreshing(true)
