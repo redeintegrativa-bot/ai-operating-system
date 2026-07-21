@@ -386,6 +386,84 @@ cmd_tunnel() {
   esac
 }
 
+cmd_serve() {
+  local deploy_flag="${1:-}"
+
+  if ! check_python; then
+    return 1
+  fi
+
+  if ! command -v cloudflared &>/dev/null; then
+    log_error "cloudflared not installed."
+    log_info "Install: curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64 -o /usr/local/bin/cloudflared && chmod +x /usr/local/bin/cloudflared"
+    return 1
+  fi
+
+  log_step "Starting AIOS (server + tunnel)..."
+
+  if ! is_running; then
+    PYTHONPATH="$PROJECT_ROOT" setsid "$PYTHON" -m src.api.server --port "$API_PORT" > "$LOG_DIR/aios-$(date +%Y%m%d-%H%M%S).log" 2>&1 &
+    echo $! > "$PID_FILE"
+    log_info "Server starting (PID: $!)"
+    if ! wait_for_health; then
+      return 1
+    fi
+  else
+    log_info "Server already running (PID: $(get_pid))"
+  fi
+
+  local tunnel_pid_file="$AIOS_DIR/tunnel.pid"
+  local tunnel_log="$LOG_DIR/tunnel.log"
+
+  if [[ -f "$tunnel_pid_file" ]] && kill -0 "$(cat "$tunnel_pid_file")" 2>/dev/null; then
+    log_info "Tunnel already running (PID: $(cat "$tunnel_pid_file"))"
+  else
+    log_step "Starting Cloudflare tunnel..."
+    rm -f "$tunnel_log"
+    setsid cloudflared tunnel --url "http://localhost:$API_PORT" > "$tunnel_log" 2>&1 &
+    echo $! > "$tunnel_pid_file"
+    sleep 5
+  fi
+
+  local url
+  url=$(grep -oP 'https://[a-z0-9-]+\.trycloudflare\.com' "$tunnel_log" 2>/dev/null | tail -1)
+
+  if [[ -z "$url" ]]; then
+    log_warn "Waiting for tunnel URL..."
+    local wait=0
+    while (( wait < 15 )); do
+      url=$(grep -oP 'https://[a-z0-9-]+\.trycloudflare\.com' "$tunnel_log" 2>/dev/null | tail -1)
+      [[ -n "$url" ]] && break
+      sleep 1
+      wait=$(( wait + 1 ))
+    done
+  fi
+
+  printf "\n"
+  printf "${BOLD}${CYAN}═══════════════════════════════════════════════${NC}\n"
+  printf "${BOLD}  AIOS Running${NC}\n"
+  printf "${CYAN}═══════════════════════════════════════════════${NC}\n"
+  printf "  Local:     ${BOLD}http://localhost:$API_PORT/dashboard/${NC}\n"
+
+  if [[ -n "$url" ]]; then
+    printf "  Tunnel:    ${BOLD}%s/dashboard/${NC}\n" "$url"
+    printf "  API:       ${BOLD}%s/api/health${NC}\n" "$url"
+
+    if [[ "$deploy_flag" == "--deploy" ]] && command -v vercel &>/dev/null && vercel whoami &>/dev/null 2>&1; then
+      log_step "Updating Vercel VITE_API_URL..."
+      cd "$PROJECT_ROOT"
+      vercel env rm VITE_API_URL production --yes 2>/dev/null
+      echo "$url" | vercel env add VITE_API_URL production 2>/dev/null
+      log_step "Deploying to Vercel..."
+      vercel deploy --prod --yes 2>&1 | tail -3
+    fi
+  else
+    printf "  Tunnel:    ${YELLOW}starting...${NC}\n"
+  fi
+
+  printf "${CYAN}═══════════════════════════════════════════════${NC}\n\n"
+}
+
 cmd_logs() {
   ensure_dirs
 
@@ -419,11 +497,11 @@ cmd_help() {
   printf "  ${RED}stop${NC}       Stop the AIOS API server\n"
   printf "  ${YELLOW}restart${NC}    Restart the AIOS API server\n"
   printf "  ${BLUE}status${NC}     Show system status and health\n"
-  printf "  ${CYAN}dashboard${NC}  Start services and open dashboard\n"
+  printf "  ${CYAN}serve${NC}      Start server + tunnel (full stack)\n"
+  printf "  ${CYAN}serve --deploy${NC}  Serve + tunnel + update Vercel\n"
   printf "  logs        Tail recent log output\n"
   printf "  build       Build dashboard (Vite)\n"
   printf "  deploy      Deploy dashboard to Vercel\n"
-  printf "  deploy --prod  Deploy to Vercel production\n"
   printf "  tunnel      Manage Cloudflare tunnel (start|stop|status|logs)\n"
   printf "  help       Show this help message\n"
   printf "\n"
@@ -452,6 +530,7 @@ main() {
     build)    cmd_build ;;
     deploy)   cmd_deploy "${2:-}" ;;
     tunnel)   cmd_tunnel "${2:-start}" ;;
+    serve)    cmd_serve "${2:-}" ;;
     help|-h|--help)
               cmd_help ;;
     --version|-v)
