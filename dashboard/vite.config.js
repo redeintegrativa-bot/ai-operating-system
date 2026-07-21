@@ -9,5 +9,6 @@ export default defineConfig({
       '/ws': { target: 'ws://localhost:8080', ws: true }
     }
   },
-  build: { outDir: 'dist' }
+  build: { outDir: 'dist', assetsDir: 'assets' },
+  base: './'
 })
