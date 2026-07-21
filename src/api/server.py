@@ -919,6 +919,88 @@ async def taskcenter_delete(task_id: str):
     return await delete_task(task_id)
 
 # ---------------------------------------------------------------------------
+# DeFi Intelligence Endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/api/defi/trending-pools")
+async def defi_trending_pools(chain: str = Query("ethereum")):
+    from src.providers.geckoterminal_provider import GeckoTerminalProvider
+    provider = GeckoTerminalProvider()
+    try:
+        resp = provider.get_data(query_type="trending_pools", chain=chain, timeout=8)
+        return resp.normalized
+    except Exception as e:
+        return {"error": str(e), "pools": []}
+
+@app.get("/api/defi/yields")
+async def defi_yields(
+    chain: Optional[str] = Query(None),
+    min_tvl: float = Query(100000),
+    sort: str = Query("apy"),
+):
+    from src.providers.defillama_provider import DefiLlamaYieldsProvider
+    provider = DefiLlamaYieldsProvider()
+    try:
+        resp = provider.get_data(timeout=15)
+        data = resp.normalized
+        pools = data.get("top_yields", [])
+        if chain:
+            pools = [p for p in pools if p.get("chain", "").lower() == chain.lower()]
+        pools = [p for p in pools if (p.get("tvl_usd", 0) or 0) >= min_tvl]
+        if sort == "tvl":
+            pools.sort(key=lambda x: x.get("tvl_usd", 0) or 0, reverse=True)
+        else:
+            pools.sort(key=lambda x: x.get("apy_total", 0) or 0, reverse=True)
+        return {"source": data.get("source", "DefiLlama"), "pools": pools[:50], "total_pools": data.get("pool_count", 0)}
+    except Exception as e:
+        return {"error": str(e), "pools": []}
+
+@app.get("/api/defi/pairs")
+async def defi_pairs(chain: str = Query("ethereum"), query: str = Query("USDC")):
+    from src.providers.dexscreener_provider import DexScreenerProvider
+    provider = DexScreenerProvider()
+    try:
+        resp = provider.get_data(query_type="search", query=query, timeout=8)
+        data = resp.normalized
+        pairs = data.get("pairs", [])
+        pairs = [p for p in pairs if p.get("chain_id", "").lower() == chain.lower()]
+        return {"source": data.get("source", "DexScreener"), "pairs": pairs[:30], "total_pairs": data.get("pair_count", 0)}
+    except Exception as e:
+        return {"error": str(e), "pairs": []}
+
+@app.get("/api/defi/top-protocols")
+async def defi_top_protocols(chain: str = Query("ethereum")):
+    from src.providers.defillama_provider import DefiLlamaProvider
+    provider = DefiLlamaProvider()
+    try:
+        resp = provider.get_data(query_type="overview", timeout=10)
+        data = resp.normalized
+        return data
+    except Exception as e:
+        return {"error": str(e), "top_protocols": []}
+
+@app.get("/api/defi/overview")
+async def defi_overview():
+    from src.providers.geckoterminal_provider import GeckoTerminalProvider
+    from src.providers.defillama_provider import DefiLlamaYieldsProvider
+    gt = GeckoTerminalProvider()
+    dl = DefiLlamaYieldsProvider()
+    result = {"trending_pools": [], "top_yields": [], "stats": {}}
+    try:
+        r1 = gt.get_data(query_type="trending_pools", chain="ethereum", timeout=8)
+        result["trending_pools"] = r1.normalized.get("pools", [])[:10]
+    except:
+        pass
+    try:
+        r2 = dl.get_data(timeout=15)
+        y = r2.normalized
+        result["top_yields"] = y.get("top_yields", [])[:10]
+        result["stats"] = {"pool_count": y.get("pool_count", 0), "total_tvl": y.get("total_tvl_usd", 0), "avg_apy": y.get("average_apy", 0)}
+    except:
+        pass
+    return result
+
+# ---------------------------------------------------------------------------
 # Mission Control & New Frontend Static Files
 # ---------------------------------------------------------------------------
 
