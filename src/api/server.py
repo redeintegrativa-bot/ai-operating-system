@@ -946,6 +946,26 @@ async def defi_trending_pools(chain: str = Query("ethereum")):
     except Exception as e:
         return {"error": str(e), "pools": []}
 
+@app.get("/api/defi/top-pools")
+async def defi_top_pools(chain: str = Query("ethereum")):
+    from src.providers.geckoterminal_provider import GeckoTerminalProvider
+    provider = GeckoTerminalProvider()
+    try:
+        resp = await asyncio.to_thread(provider.get_data, query_type="top_pools", chain=chain, timeout=8)
+        return resp.normalized
+    except Exception as e:
+        return {"error": str(e), "pools": []}
+
+@app.get("/api/defi/hot-pairs")
+async def defi_hot_pairs(query: str = Query("USDC")):
+    from src.providers.dexscreener_provider import DexScreenerProvider
+    provider = DexScreenerProvider()
+    try:
+        resp = await asyncio.to_thread(provider.get_data, query_type="search", query=query, timeout=8)
+        return resp.normalized
+    except Exception as e:
+        return {"error": str(e), "pairs": []}
+
 @app.get("/api/defi/yields")
 async def defi_yields(
     chain: Optional[str] = Query(None),
