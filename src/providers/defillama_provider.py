@@ -98,7 +98,7 @@ class DefiLlamaYieldsProvider(DefiLlamaProvider):
             return self._mock_fallback("yields", **kwargs)
 
     def parse_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
-        if raw_data.get("fallback"):
+        if isinstance(raw_data, dict) and raw_data.get("fallback"):
             return raw_data
 
         pools = raw_data.get("data", [])
@@ -106,28 +106,41 @@ class DefiLlamaYieldsProvider(DefiLlamaProvider):
             pools = raw_data.get("pools", [])
 
         parsed_pools = []
-        for pool in pools[:100]:
+        for pool in pools:
+            tvl = pool.get("tvlUsd", 0) or 0
+            apy = pool.get("apy", pool.get("apyBase", 0)) or 0
+            if tvl < 1000:
+                continue
             parsed_pools.append({
                 "pool": pool.get("pool", ""),
                 "chain": pool.get("chain", ""),
                 "project": pool.get("project", ""),
                 "symbol": pool.get("symbol", ""),
-                "tvl_usd": pool.get("tvlUsd", 0),
-                "apy_base": pool.get("apyBase", 0),
-                "apy_reward": pool.get("apyReward", 0),
-                "apy_total": pool.get("apy", pool.get("apyBase", 0)),
-                "apy_7d": pool.get("apyBase7d", 0),
-                "apy_30d": pool.get("apyBase30d", 0),
+                "tvl_usd": tvl,
+                "volume_usd_1d": pool.get("volumeUsd1d", 0) or 0,
+                "volume_usd_7d": pool.get("volumeUsd7d", 0) or 0,
+                "apy_base": pool.get("apyBase", 0) or 0,
+                "apy_reward": pool.get("apyReward", 0) or 0,
+                "apy_total": apy,
+                "apy_7d": pool.get("apyBase7d", 0) or 0,
+                "apy_30d": pool.get("apyBase30d", 0) or 0,
                 "il_risk": pool.get("ilRisk", "no"),
+                "stablecoin": pool.get("stablecoin", False),
+                "exposure": pool.get("exposure", ""),
+                "predictions": pool.get("predictions", {}),
+                "mu": pool.get("mu", 0) or 0,
+                "sigma": pool.get("sigma", 0) or 0,
+                "count": pool.get("count", 0) or 0,
+                "outlier": pool.get("outlier", False),
             })
 
-        top_yield = sorted(parsed_pools, key=lambda x: x.get("apy_total", 0), reverse=True)[:10]
+        total_tvl = sum(p.get("tvl_usd", 0) for p in parsed_pools)
 
         return {
             "source": "DefiLlama Yields",
             "pool_count": len(parsed_pools),
-            "top_yields": top_yield,
+            "all_pools": parsed_pools,
             "average_apy": round(sum(p.get("apy_total", 0) for p in parsed_pools) / len(parsed_pools), 2) if parsed_pools else 0,
-            "total_tvl_usd": sum(p.get("tvl_usd", 0) for p in parsed_pools),
+            "total_tvl_usd": total_tvl,
             "parsed_at": datetime.now().isoformat(),
         }
