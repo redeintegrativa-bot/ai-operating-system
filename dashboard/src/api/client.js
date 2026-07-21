@@ -38,6 +38,7 @@ export const api = {
   getAnalytics: () => request('GET', '/api/analytics'),
   getDeFiTrending: (chain = 'ethereum') => request('GET', `/api/defi/trending-pools?chain=${chain}`),
   getDeFITopPools: (chain = 'ethereum') => request('GET', `/api/defi/top-pools?chain=${chain}`),
+  getDeFiPoolDetail: (chain = 'eth', poolAddress, timeframe = 'day') => request('GET', `/api/defi/pool-detail?chain=${chain}&pool_address=${poolAddress}&timeframe=${timeframe}`),
   getDeFiYields: (chain = 'ethereum', minTvl = 10000, sort = 'apy', limit = 100) => request('GET', `/api/defi/yields?chain=${chain}&min_tvl=${minTvl}&sort=${sort}&limit=${limit}`),
   getDeFIHotPairs: (query = 'USDC') => request('GET', `/api/defi/hot-pairs?query=${query}`),
   getDeFiProtocols: () => request('GET', '/api/defi/top-protocols'),
