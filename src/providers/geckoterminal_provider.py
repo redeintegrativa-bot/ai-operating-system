@@ -3,8 +3,23 @@ from typing import Any, Dict, List, Optional
 from src.providers.base_provider import BaseDefiProvider
 
 
+CHAIN_MAP = {
+    "ethereum": "eth",
+    "bsc": "bsc",
+    "polygon": "polygon",
+    "arbitrum": "arbitrum",
+    "avalanche": "avax",
+    "optimism": "optimism",
+    "base": "base",
+    "solana": "solana",
+}
+
+
 class GeckoTerminalProvider(BaseDefiProvider):
     cache_timeout_seconds: int = 120
+
+    def _resolve_chain(self, chain: str) -> str:
+        return CHAIN_MAP.get(chain.lower(), chain.lower())
 
     def get_name(self) -> str:
         return "geckoterminal"
@@ -16,7 +31,7 @@ class GeckoTerminalProvider(BaseDefiProvider):
             base_url = "https://api.geckoterminal.com/api/v2"
 
             if query_type == "trending_pools":
-                chain = kwargs.get("chain", "ethereum")
+                chain = self._resolve_chain(kwargs.get("chain", "ethereum"))
                 response = requests.get(
                     f"{base_url}/networks/{chain}/trending_pools",
                     timeout=kwargs.get("timeout", 10),
@@ -25,7 +40,7 @@ class GeckoTerminalProvider(BaseDefiProvider):
                 return response.json()
 
             elif query_type == "ohlcv":
-                chain = kwargs.get("chain", "ethereum")
+                chain = self._resolve_chain(kwargs.get("chain", "ethereum"))
                 pool_address = kwargs.get("pool_address", "")
                 timeframe = kwargs.get("timeframe", "day")
                 response = requests.get(
@@ -36,7 +51,7 @@ class GeckoTerminalProvider(BaseDefiProvider):
                 return response.json()
 
             elif query_type == "pool_info":
-                chain = kwargs.get("chain", "ethereum")
+                chain = self._resolve_chain(kwargs.get("chain", "ethereum"))
                 pool_address = kwargs.get("pool_address", "")
                 response = requests.get(
                     f"{base_url}/networks/{chain}/pools/{pool_address}",
