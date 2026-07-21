@@ -991,7 +991,7 @@ async def defi_pool_detail(
                 "network_id": info.get("data", {}).get("relationships", {}).get("network", {}).get("data", {}).get("id", ""),
             }
 
-        ohlcv = await asyncio.to_thread(_get, f"{base}/networks/{chain}/pools/{pool_address}/ohlcv/{timeframe}?aggregate=60&limit=100")
+        ohlcv = await asyncio.to_thread(_get, f"{base}/networks/{chain}/pools/{pool_address}/ohlcv/{timeframe}")
         if ohlcv:
             raw_ohlcv = ohlcv.get("data", {}).get("attributes", {}).get("ohlcv_list", [])
             for c in raw_ohlcv:
