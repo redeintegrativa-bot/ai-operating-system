@@ -1,4 +1,4 @@
-function getApiBase() {
+function resolveApiBase() {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem('aios_api_url')
@@ -7,15 +7,15 @@ function getApiBase() {
   return ''
 }
 
-const API_BASE = getApiBase()
+const API_BASE = resolveApiBase()
+
+export function getApiBase() {
+  return API_BASE
+}
 
 export function setApiBase(url) {
   localStorage.setItem('aios_api_url', url.replace(/\/+$/, ''))
   window.location.reload()
-}
-
-export function getApiBase() {
-  return API_BASE
 }
 
 async function request(method, path, data) {
