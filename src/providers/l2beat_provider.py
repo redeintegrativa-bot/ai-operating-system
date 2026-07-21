@@ -13,44 +13,28 @@ class L2BeatProvider(BaseDefiProvider):
         query_type = kwargs.get("query_type", "overview")
         try:
             import requests
-            base_url = "https://api.l2beat.com/v1"
+            timeout = kwargs.get("timeout", 10)
 
             if query_type == "overview":
                 response = requests.get(
-                    f"{base_url}/scaling/overview",
-                    timeout=kwargs.get("timeout", 10),
-                )
-                response.raise_for_status()
-                return response.json()
-
-            elif query_type == "status":
-                response = requests.get(
-                    f"{base_url}/scaling/status",
-                    timeout=kwargs.get("timeout", 10),
-                )
-                response.raise_for_status()
-                return response.json()
-
-            elif query_type == "tvl":
-                response = requests.get(
-                    f"{base_url}/scaling/tvl",
-                    timeout=kwargs.get("timeout", 10),
+                    "https://l2beat.com/api/scaling/summary",
+                    timeout=timeout,
                 )
                 response.raise_for_status()
                 return response.json()
 
             elif query_type == "activity":
                 response = requests.get(
-                    f"{base_url}/scaling/activity",
-                    timeout=kwargs.get("timeout", 10),
+                    "https://l2beat.com/api/scaling/activity",
+                    timeout=timeout,
                 )
                 response.raise_for_status()
                 return response.json()
 
             else:
                 response = requests.get(
-                    f"{base_url}/scaling/overview",
-                    timeout=kwargs.get("timeout", 10),
+                    "https://l2beat.com/api/scaling/summary",
+                    timeout=timeout,
                 )
                 response.raise_for_status()
                 return response.json()
@@ -62,42 +46,56 @@ class L2BeatProvider(BaseDefiProvider):
         if raw_data.get("fallback"):
             return raw_data
 
-        projects = raw_data.get("data", raw_data)
-        if isinstance(projects, dict):
-            projects = projects.get("projects", [])
-        if isinstance(projects, dict):
-            projects = list(projects.values())
+        projects = raw_data.get("projects", raw_data)
+
+        if isinstance(projects, dict) and "data" in projects:
+            projects = projects["data"]
 
         parsed_projects = []
-        if isinstance(projects, list):
-            for project in projects[:50]:
-                if isinstance(project, dict):
-                    parsed_projects.append({
-                        "name": project.get("name", ""),
-                        "slug": project.get("slug", ""),
-                        "category": project.get("category", "other"),
-                        "stage": project.get("stage", ""),
-                        "tvl_usd": project.get("tvl", project.get("totalTvl", 0)),
-                        "market_share_pct": project.get("marketShare", 0),
-                        "purpose": project.get("purpose", ""),
-                        "technology": project.get("technology", ""),
-                        "da_layer": project.get("daLayer", project.get("dataAvailability", "")),
-                        "transactions_30d": project.get("activity", {}).get("transactions30d", 0),
-                        "change_7d_tvl_pct": project.get("change_7d", 0),
-                    })
+
+        if isinstance(projects, dict):
+            items = projects.values()
+        elif isinstance(projects, list):
+            items = projects
+        else:
+            items = []
+
+        for project in items:
+            if not isinstance(project, dict):
+                continue
+
+            tvs_data = project.get("tvs", {})
+            tvs_breakdown = tvs_data.get("breakdown", {}) if isinstance(tvs_data, dict) else {}
+            tvl = tvs_breakdown.get("total", 0) if isinstance(tvs_breakdown, dict) else 0
+
+            parsed_projects.append({
+                "name": project.get("name", ""),
+                "slug": project.get("slug", ""),
+                "category": project.get("category", "other"),
+                "stage": project.get("stage", ""),
+                "type": project.get("type", ""),
+                "host_chain": project.get("hostChain", ""),
+                "tvl_usd": tvl * 1e6 if tvl and tvl < 100000 else tvl,
+                "change_7d_tvl_pct": (tvs_data.get("change7d", 0) or 0) * 100 if isinstance(tvs_data, dict) else 0,
+                "purposes": project.get("purposes", []),
+                "providers": project.get("providers", []),
+            })
+
+        parsed_projects.sort(key=lambda x: x.get("tvl_usd", 0) or 0, reverse=True)
 
         total_tvl = sum(p.get("tvl_usd", 0) or 0 for p in parsed_projects)
-        total_tx_30d = sum(p.get("transactions_30d", 0) or 0 for p in parsed_projects)
+
+        for p in parsed_projects[:50]:
+            p["market_share_pct"] = round((p.get("tvl_usd", 0) / total_tvl * 100), 2) if total_tvl > 0 else 0
 
         return {
             "source": "L2Beat",
             "project_count": len(parsed_projects),
             "total_tvl_usd": total_tvl,
-            "total_transactions_30d": total_tx_30d,
-            "projects": parsed_projects,
+            "projects": parsed_projects[:50],
             "dominance": [
-                {"name": p["name"], "share_pct": round((p.get("tvl_usd", 0) / total_tvl * 100), 2) if total_tvl > 0 else 0}
-                for p in sorted(parsed_projects, key=lambda x: x.get("tvl_usd", 0) or 0, reverse=True)[:5]
+                {"name": p["name"], "share_pct": p.get("market_share_pct", 0)}
+                for p in parsed_projects[:5]
             ],
             "parsed_at": datetime.now().isoformat(),
         }
