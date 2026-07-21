@@ -6,7 +6,8 @@ import {
   Coins, TrendingUp, TrendingDown, Droplets, ExternalLink,
   RefreshCw, Zap, BarChart3, Activity, Search, Layers, Brain,
   Database, ArrowUpDown, AlertCircle, Pause, Play, Flame,
-  Clock, DollarSign, Percent, Hash, ArrowRightLeft, Star
+  Clock, DollarSign, Percent, Hash, ArrowRightLeft, Star,
+  ArrowUpRight, ArrowDownRight, Filter, X, ChevronDown
 } from 'lucide-react'
 
 function fmt(n, decimals = 0) {
@@ -40,17 +41,52 @@ function pct(n) {
   if (n == null || isNaN(n)) return <span className="text-gray-400">--</span>
   const v = Number(n)
   const color = v > 0 ? 'text-green-600' : v < 0 ? 'text-red-500' : 'text-gray-500'
-  return <span className={color}>{v > 0 ? '+' : ''}{v.toFixed(2)}%</span>
+  return <span className={`font-semibold ${color}`}>{v > 0 ? '+' : ''}{v.toFixed(2)}%</span>
 }
 
-function ChainBadge({ chain }) {
-  const c = {
-    ethereum: 'bg-blue-100 text-blue-700', base: 'bg-blue-50 text-blue-600',
-    arbitrum: 'bg-blue-100 text-blue-800', bsc: 'bg-yellow-100 text-yellow-700',
-    polygon: 'bg-purple-100 text-purple-700', optimism: 'bg-red-100 text-red-600',
-    avalanche: 'bg-red-50 text-red-700', solana: 'bg-green-100 text-green-700',
-  }[chain?.toLowerCase()] || 'bg-gray-100 text-gray-600'
-  return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${c}`}>{chain || '?'}</span>
+function pctText(n) {
+  if (n == null || isNaN(n)) return '--'
+  const v = Number(n)
+  return `${v > 0 ? '+' : ''}${v.toFixed(2)}%`
+}
+
+function pctColor(n) {
+  const v = Number(n || 0)
+  return v > 0 ? 'text-green-600' : v < 0 ? 'text-red-500' : 'text-gray-500'
+}
+
+function pctBg(n) {
+  const v = Number(n || 0)
+  return v > 0 ? 'bg-green-50 text-green-700' : v < 0 ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-gray-500'
+}
+
+const CHAIN_META = {
+  ethereum: { label: 'Ethereum', color: 'bg-blue-500', text: 'text-blue-700', bg: 'bg-blue-50' },
+  base: { label: 'Base', color: 'bg-blue-400', text: 'text-blue-600', bg: 'bg-blue-50' },
+  arbitrum: { label: 'Arbitrum', color: 'bg-blue-600', text: 'text-blue-800', bg: 'bg-blue-50' },
+  bsc: { label: 'BSC', color: 'bg-yellow-500', text: 'text-yellow-700', bg: 'bg-yellow-50' },
+  polygon: { label: 'Polygon', color: 'bg-purple-500', text: 'text-purple-700', bg: 'bg-purple-50' },
+  solana: { label: 'Solana', color: 'bg-green-500', text: 'text-green-700', bg: 'bg-green-50' },
+  optimism: { label: 'Optimism', color: 'bg-red-500', text: 'text-red-600', bg: 'bg-red-50' },
+  avalanche: { label: 'Avalanche', color: 'bg-red-400', text: 'text-red-700', bg: 'bg-red-50' },
+}
+
+function ChainBadge({ chain, size = 'sm' }) {
+  const meta = CHAIN_META[chain?.toLowerCase()] || { label: chain || '?', color: 'bg-gray-400', text: 'text-gray-600', bg: 'bg-gray-50' }
+  if (size === 'xs') {
+    return (
+      <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${meta.text} ${meta.bg}`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${meta.color}`} />
+        {meta.label}
+      </span>
+    )
+  }
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full font-medium ${meta.text} ${meta.bg}`}>
+      <span className={`w-2 h-2 rounded-full ${meta.color}`} />
+      {meta.label}
+    </span>
+  )
 }
 
 function ErrorBanner({ error, onDismiss }) {
@@ -65,10 +101,10 @@ function ErrorBanner({ error, onDismiss }) {
 }
 
 function MiniBar({ value, max, color = '#2563eb', className = '' }) {
-  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0
+  const p = max > 0 ? Math.min((value / max) * 100, 100) : 0
   return (
-    <div className={`w-full bg-gray-100 rounded-full h-1.5 ${className}`}>
-      <div className="h-1.5 rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
+    <div className={`w-full bg-gray-100 rounded-full h-1 ${className}`}>
+      <div className="h-1 rounded-full transition-all duration-500" style={{ width: `${p}%`, backgroundColor: color }} />
     </div>
   )
 }
@@ -78,7 +114,7 @@ function PriceTicker({ prices }) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
       {prices.map((p, i) => (
-        <div key={i} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5 flex-shrink-0">
+        <div key={i} className="flex items-center gap-2 bg-white border border-gray-100 rounded-lg px-3 py-2 flex-shrink-0 shadow-sm">
           <span className="text-xs font-bold text-gray-700">{p.symbol?.toUpperCase()}</span>
           <span className="text-sm font-mono">{fmtPrice(p.price_usd)}</span>
           {pct(p.change_24h_pct)}
@@ -88,16 +124,195 @@ function PriceTicker({ prices }) {
   )
 }
 
+function PoolCard({ pool, index, maxTvl, maxVol, onClick }) {
+  const name = pool.name || ''
+  const [base, quote] = name.includes('/') ? name.split(' / ').map(s => s.trim()) : [name, '']
+  const tvl = Number(pool.reserve_in_usd || 0)
+  const vol = Number(pool.volume_usd_24h || 0)
+  const change = Number(pool.price_change_24h_pct || 0)
+  const txns = pool.transactions_24h || {}
+  const buys = typeof txns === 'object' ? (txns.buys || 0) : 0
+  const sells = typeof txns === 'object' ? (txns.sells || 0) : 0
+  const totalTxns = buys + sells
+  const buyRatio = totalTxns > 0 ? (buys / totalTxns * 100) : 50
+  const volLiqRatio = tvl > 0 ? (vol / tvl * 100) : 0
+
+  return (
+    <div onClick={onClick}
+      className="bg-white border border-gray-100 rounded-xl p-4 hover:border-blue-200 hover:shadow-md transition-all duration-200 cursor-pointer group">
+      {/* Header: rank + pair + chain */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-gray-300 font-mono">#{index + 1}</span>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-base text-gray-900">{base}</span>
+              {quote && <span className="text-gray-300 text-sm">/</span>}
+              {quote && <span className="text-gray-500 text-sm font-medium">{quote}</span>}
+            </div>
+            <div className="flex items-center gap-1.5 mt-1">
+              <ChainBadge chain={pool.network || pool.chain} size="xs" />
+              {pool.dex && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium uppercase">
+                  {pool.dex.replace(/_/g, ' ')}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className={`text-right px-2 py-1 rounded-lg ${pctBg(change)}`}>
+          <div className={`text-sm font-bold ${pctColor(change)}`}>{pctText(change)}</div>
+        </div>
+      </div>
+
+      {/* Metrics row */}
+      <div className="grid grid-cols-3 gap-3 mb-3">
+        <div>
+          <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Liquidity</div>
+          <div className="text-sm font-bold text-gray-900">{fmt(tvl)}</div>
+          <MiniBar value={tvl} max={maxTvl} color="#3b82f6" className="mt-1" />
+        </div>
+        <div>
+          <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Volume 24h</div>
+          <div className="text-sm font-bold text-gray-900">{fmt(vol)}</div>
+          <MiniBar value={vol} max={maxVol} color="#22c55e" className="mt-1" />
+        </div>
+        <div>
+          <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Vol/Liq</div>
+          <div className={`text-sm font-bold ${volLiqRatio > 50 ? 'text-orange-600' : volLiqRatio > 10 ? 'text-blue-600' : 'text-gray-600'}`}>
+            {volLiqRatio.toFixed(1)}%
+          </div>
+          <div className="text-[10px] text-gray-400 mt-1">
+            {totalTxns > 0 ? `${fmtNum(totalTxns)} txns` : ''}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer: buy/sell bar */}
+      {totalTxns > 0 && (
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
+            <div className="h-full bg-green-400 rounded-l-full transition-all duration-500"
+                 style={{ width: `${buyRatio}%` }} />
+            <div className="h-full bg-red-300 rounded-r-full transition-all duration-500"
+                 style={{ width: `${100 - buyRatio}%` }} />
+          </div>
+          <span className="text-[10px] text-gray-400 flex-shrink-0">
+            {buyRatio > 55 ? 'Buy pressure' : buyRatio < 45 ? 'Sell pressure' : 'Balanced'}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function YieldCard({ pool, index, onClick }) {
+  const apy = Number(pool.apy_total || 0)
+  const tvl = Number(pool.tvl_usd || 0)
+  const vol1d = Number(pool.volume_usd_1d || 0)
+  const apyColor = apy > 20 ? 'text-green-600' : apy > 5 ? 'text-blue-600' : apy > 0 ? 'text-gray-700' : 'text-red-500'
+  const prediction = pool.predictions?.predictedClass || ''
+
+  return (
+    <div onClick={onClick}
+      className="bg-white border border-gray-100 rounded-xl p-4 hover:border-green-200 hover:shadow-md transition-all duration-200 cursor-pointer group">
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-bold text-base text-gray-900">{pool.symbol}</span>
+            <ChainBadge chain={pool.chain} size="xs" />
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium">{pool.project}</span>
+            {pool.stablecoin && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">Stable</span>}
+            {pool.il_risk === 'yes' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-medium">IL Risk</span>}
+            {prediction && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-400">{prediction}</span>}
+          </div>
+        </div>
+        <div className={`text-right px-3 py-2 rounded-lg ${apy > 20 ? 'bg-green-50' : apy > 5 ? 'bg-blue-50' : 'bg-gray-50'}`}>
+          <div className={`text-xl font-bold ${apyColor}`}>{apy.toFixed(1)}%</div>
+          <div className="text-[10px] text-gray-400">APY</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 mb-3">
+        <div>
+          <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Base APY</div>
+          <div className="text-sm font-bold text-gray-900">{Number(pool.apy_base || 0).toFixed(1)}%</div>
+        </div>
+        <div>
+          <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">TVL</div>
+          <div className="text-sm font-bold text-gray-900">{fmt(tvl)}</div>
+        </div>
+        <div>
+          <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Volume 24h</div>
+          <div className="text-sm font-bold text-gray-900">{fmt(vol1d)}</div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <MiniBar value={apy} max={30} color={apy > 20 ? '#16a34a' : apy > 5 ? '#2563eb' : '#9ca3af'} className="flex-1" />
+        <span className="text-[10px] text-gray-400 flex-shrink-0">7d: {Number(pool.apy_7d || 0).toFixed(1)}%</span>
+      </div>
+    </div>
+  )
+}
+
+function HotPairCard({ pair, index, onClick }) {
+  const vol = Number(pair.volume?.h24 || 0)
+  const liq = Number(pair.liquidity?.usd || 0)
+  const price = Number(pair.priceUsd || 0)
+  const change = Number(pair.priceChange?.h24 || 0)
+  const txns = Number(pair.txns?.h24?.buys || 0) + Number(pair.txns?.h24?.sells || 0)
+
+  return (
+    <div onClick={onClick}
+      className="bg-white border border-gray-100 rounded-xl p-4 hover:border-yellow-200 hover:shadow-md transition-all duration-200 cursor-pointer group">
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="font-bold text-base text-gray-900">{pair.baseToken?.symbol}</span>
+            <span className="text-gray-300">/</span>
+            <span className="text-gray-500 font-medium">{pair.quoteToken?.symbol}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <ChainBadge chain={pair.chainId} size="xs" />
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium uppercase">{pair.dexId}</span>
+          </div>
+        </div>
+        <div className={`text-right px-2 py-1 rounded-lg ${pctBg(change)}`}>
+          <div className={`text-sm font-bold ${pctColor(change)}`}>{pctText(change)}</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Price</div>
+          <div className="text-sm font-bold text-gray-900">{fmtPrice(price)}</div>
+        </div>
+        <div>
+          <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Volume</div>
+          <div className="text-sm font-bold text-gray-900">{fmt(vol)}</div>
+        </div>
+        <div>
+          <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Liquidity</div>
+          <div className="text-sm font-bold text-gray-900">{fmt(liq)}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const CHAINS = ['ethereum', 'base', 'arbitrum', 'bsc', 'polygon', 'solana']
 const TABS = [
-  { key: 'trending', label: 'Trending', icon: Flame },
-  { key: 'top', label: 'Top Volume', icon: BarChart3 },
-  { key: 'yields', label: 'Yields', icon: Coins },
-  { key: 'hot', label: 'Hot Pairs', icon: Zap },
-  { key: 'market', label: 'Market', icon: TrendingUp },
-  { key: 'protocols', label: 'Protocols', icon: Database },
-  { key: 'l2', label: 'L2', icon: Layers },
-  { key: 'intel', label: 'Intelligence', icon: Brain },
+  { key: 'trending', label: 'Trending', icon: Flame, accent: 'orange' },
+  { key: 'top', label: 'Top Volume', icon: BarChart3, accent: 'blue' },
+  { key: 'yields', label: 'Yields', icon: Coins, accent: 'green' },
+  { key: 'hot', label: 'Hot Pairs', icon: Zap, accent: 'yellow' },
+  { key: 'market', label: 'Market', icon: TrendingUp, accent: 'emerald' },
+  { key: 'protocols', label: 'Protocols', icon: Database, accent: 'purple' },
+  { key: 'l2', label: 'L2', icon: Layers, accent: 'indigo' },
+  { key: 'intel', label: 'Intelligence', icon: Brain, accent: 'pink' },
 ]
 
 export default function DeFiIntelligence() {
@@ -105,6 +320,7 @@ export default function DeFiIntelligence() {
   const [chain, setChain] = useState('ethereum')
   const [sortBy, setSortBy] = useState('volume')
   const [search, setSearch] = useState('')
+  const [minTvlFilter, setMinTvlFilter] = useState(0)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -127,7 +343,6 @@ export default function DeFiIntelligence() {
   const fetchAll = useCallback(() => {
     setRefreshing(true)
     setError(null)
-    const activeTab = tab
 
     const fetches = {
       trending: api.getDeFiTrending(chain).then(r => { setTrending(r?.pools || []) }),
@@ -139,7 +354,7 @@ export default function DeFiIntelligence() {
       l2: api.getDeFIL2().then(r => { setL2(r?.projects || []) }),
       intel: api.getDeFIIntelligence().then(r => { setIntel(r || {}) }),
       overview: api.getDeFiOverview().then(r => { setOverview(r || {}) }),
-      prices: api.getDeFIPrices('bitcoin,ethereum,solana,binancecoin,solana,ripple,dogecoin').then(r => { setPrices(r?.results || []) }),
+      prices: api.getDeFIPrices('bitcoin,ethereum,solana,binancecoin,ripple,dogecoin').then(r => { setPrices(r?.results || []) }),
     }
 
     Promise.allSettled(Object.values(fetches))
@@ -169,31 +384,39 @@ export default function DeFiIntelligence() {
     })
   }
 
+  const filterByTvl = (items, tvlKey = 'reserve_in_usd') => {
+    if (minTvlFilter <= 0) return items
+    return items.filter(item => Number(item[tvlKey] || 0) >= minTvlFilter)
+  }
+
   const sortedTrending = useMemo(() => {
-    const filtered = filterByName(trending)
+    let filtered = filterByName(trending)
+    filtered = filterByTvl(filtered)
     return [...filtered].sort((a, b) => {
       if (sortBy === 'tvl') return Number(b.reserve_in_usd || 0) - Number(a.reserve_in_usd || 0)
       return Number(b.volume_usd_24h || 0) - Number(a.volume_usd_24h || 0)
     })
-  }, [trending, sortBy, searchLower])
+  }, [trending, sortBy, searchLower, minTvlFilter])
 
   const sortedTopPools = useMemo(() => {
-    const filtered = filterByName(topPools)
+    let filtered = filterByName(topPools)
+    filtered = filterByTvl(filtered)
     return [...filtered].sort((a, b) => {
       if (sortBy === 'tvl') return Number(b.reserve_in_usd || 0) - Number(a.reserve_in_usd || 0)
       return Number(b.volume_usd_24h || 0) - Number(a.volume_usd_24h || 0)
     })
-  }, [topPools, sortBy, searchLower])
+  }, [topPools, sortBy, searchLower, minTvlFilter])
 
   const sortedYields = useMemo(() => {
     let filtered = filterByName(yields)
+    filtered = filterByTvl(filtered, 'tvl_usd')
     if (sortBy === 'stable') filtered = filtered.filter(p => p.stablecoin)
     return [...filtered].sort((a, b) => {
       if (sortBy === 'tvl') return Number(b.tvl_usd || 0) - Number(a.tvl_usd || 0)
       if (sortBy === 'volume') return Number(b.volume_usd_1d || 0) - Number(a.volume_usd_1d || 0)
       return Number(b.apy_total || 0) - Number(a.apy_total || 0)
     })
-  }, [yields, sortBy, searchLower])
+  }, [yields, sortBy, searchLower, minTvlFilter])
 
   const sortedHotPairs = useMemo(() => {
     return filterByName(hotPairs, 'baseToken').sort((a, b) => {
@@ -218,20 +441,30 @@ export default function DeFiIntelligence() {
   }, [l2, searchLower])
 
   const stats = overview.stats || {}
+  const maxTvl = Math.max(...sortedTrending.map(p => Number(p.reserve_in_usd || 0)), ...sortedTopPools.map(p => Number(p.reserve_in_usd || 0)), 1)
+  const maxVol = Math.max(...sortedTrending.map(p => Number(p.volume_usd_24h || 0)), ...sortedTopPools.map(p => Number(p.volume_usd_24h || 0)), 1)
   const maxMcap = sortedMarket[0] ? Number(sortedMarket[0].market_cap_usd || 1) : 1
-  const maxTvl = sortedProtocols[0] ? Number(sortedProtocols[0].tvl_usd || 1) : 1
+  const maxProtTvl = sortedProtocols[0] ? Number(sortedProtocols[0].tvl_usd || 1) : 1
   const maxL2Tvl = sortedL2[0] ? Number(sortedL2[0].tvl_usd || 1) : 1
+
+  const showChainFilter = ['trending', 'top', 'yields'].includes(tab)
+  const showSortOptions = ['trending', 'top', 'yields', 'market'].includes(tab)
+  const showTvlFilter = ['trending', 'top', 'yields'].includes(tab)
 
   const sortOptions = {
     trending: [['volume', 'Volume'], ['tvl', 'TVL']],
     top: [['volume', 'Volume'], ['tvl', 'TVL']],
-    yields: [['apy', 'APY'], ['tvl', 'TVL'], ['volume', 'Volume'], ['stable', 'Stables Only']],
-    hot: [],
+    yields: [['apy', 'APY'], ['tvl', 'TVL'], ['volume', 'Volume'], ['stable', 'Stables']],
     market: [['mcap', 'Market Cap'], ['volume', 'Volume'], ['change', '24h Change']],
-    protocols: [],
-    l2: [],
-    intel: [],
   }
+
+  const tvlPresets = [
+    { label: 'All', value: 0 },
+    { label: '>$10K', value: 10000 },
+    { label: '>$100K', value: 100000 },
+    { label: '>$1M', value: 1000000 },
+    { label: '>$10M', value: 10000000 },
+  ]
 
   const actions = (
     <div className="flex items-center gap-3">
@@ -259,318 +492,301 @@ export default function DeFiIntelligence() {
         actions={actions}
       />
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
         <PriceTicker prices={prices} />
 
+        {/* Stats bar */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <div className="card flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-50 text-blue-600"><Droplets className="w-5 h-5" /></div>
+          <div className="card flex items-center gap-3 py-3">
+            <div className="p-2 rounded-lg bg-blue-50 text-blue-600"><Droplets className="w-4 h-4" /></div>
             <div>
-              <div className="text-xs text-gray-500">Yield Pools</div>
-              <div className="text-lg font-bold">{(stats.pool_count || yields.length || 0).toLocaleString()}</div>
+              <div className="text-[10px] text-gray-400 uppercase tracking-wider">Yield Pools</div>
+              <div className="text-base font-bold">{(stats.pool_count || yields.length || 0).toLocaleString()}</div>
             </div>
           </div>
-          <div className="card flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-50 text-green-600"><DollarSign className="w-5 h-5" /></div>
+          <div className="card flex items-center gap-3 py-3">
+            <div className="p-2 rounded-lg bg-green-50 text-green-600"><DollarSign className="w-4 h-4" /></div>
             <div>
-              <div className="text-xs text-gray-500">Total TVL</div>
-              <div className="text-lg font-bold">{fmt(stats.total_tvl || 0)}</div>
+              <div className="text-[10px] text-gray-400 uppercase tracking-wider">Total TVL</div>
+              <div className="text-base font-bold">{fmt(stats.total_tvl || 0)}</div>
             </div>
           </div>
-          <div className="card flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-50 text-purple-600"><Percent className="w-5 h-5" /></div>
+          <div className="card flex items-center gap-3 py-3">
+            <div className="p-2 rounded-lg bg-purple-50 text-purple-600"><Percent className="w-4 h-4" /></div>
             <div>
-              <div className="text-xs text-gray-500">Avg APY</div>
-              <div className="text-lg font-bold">{(stats.avg_apy || 0).toFixed(1)}%</div>
+              <div className="text-[10px] text-gray-400 uppercase tracking-wider">Avg APY</div>
+              <div className="text-base font-bold">{(stats.avg_apy || 0).toFixed(1)}%</div>
             </div>
           </div>
-          <div className="card flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-50 text-amber-600"><Flame className="w-5 h-5" /></div>
+          <div className="card flex items-center gap-3 py-3">
+            <div className="p-2 rounded-lg bg-amber-50 text-amber-600"><Flame className="w-4 h-4" /></div>
             <div>
-              <div className="text-xs text-gray-500">Trending</div>
-              <div className="text-lg font-bold">{trending.length}</div>
+              <div className="text-[10px] text-gray-400 uppercase tracking-wider">Trending</div>
+              <div className="text-base font-bold">{trending.length}</div>
             </div>
           </div>
-          <div className="card flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-red-50 text-red-600"><Layers className="w-5 h-5" /></div>
+          <div className="card flex items-center gap-3 py-3">
+            <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600"><Layers className="w-4 h-4" /></div>
             <div>
-              <div className="text-xs text-gray-500">L2 Projects</div>
-              <div className="text-lg font-bold">{l2.length || '--'}</div>
+              <div className="text-[10px] text-gray-400 uppercase tracking-wider">L2 Projects</div>
+              <div className="text-base font-bold">{l2.length || '--'}</div>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex bg-gray-100 rounded-lg p-0.5">
+        {/* Filter bar */}
+        <div className="bg-white border border-gray-100 rounded-xl p-3 space-y-3">
+          {/* Row 1: Tabs */}
+          <div className="flex items-center gap-2 flex-wrap">
             {TABS.map(t => (
-              <button key={t.key} onClick={() => { setTab(t.key); setSortBy(t.key === 'yields' ? 'apy' : t.key === 'market' ? 'mcap' : 'volume') }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition ${tab === t.key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
-                <t.icon className="w-3 h-3" />
+              <button key={t.key} onClick={() => {
+                setTab(t.key)
+                setSortBy(t.key === 'yields' ? 'apy' : t.key === 'market' ? 'mcap' : 'volume')
+                setMinTvlFilter(0)
+              }}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition ${
+                  tab === t.key
+                    ? 'bg-gray-900 text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}>
+                <t.icon className="w-3.5 h-3.5" />
                 {t.label}
               </button>
             ))}
+
+            <div className="flex-1" />
+
+            {/* Search */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Search pools, tokens..."
+                className="pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-lg w-56 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50" />
+              {search && (
+                <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
           </div>
 
-          {(tab === 'trending' || tab === 'top' || tab === 'yields') && (
-            <div className="flex bg-gray-100 rounded-lg p-0.5">
-              {CHAINS.map(c => (
-                <button key={c} onClick={() => setChain(c)}
-                  className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition ${chain === c ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
-                  {c.charAt(0).toUpperCase() + c.slice(1)}
-                </button>
-              ))}
+          {/* Row 2: Chain + Sort + TVL filter */}
+          {(showChainFilter || showSortOptions || showTvlFilter) && (
+            <div className="flex items-center gap-3 flex-wrap pt-1 border-t border-gray-50">
+              {/* Chain filter */}
+              {showChainFilter && (
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wider mr-1">Chain</span>
+                  {CHAINS.map(c => {
+                    const meta = CHAIN_META[c] || {}
+                    return (
+                      <button key={c} onClick={() => setChain(c)}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg transition ${
+                          chain === c
+                            ? `${meta.bg || 'bg-gray-100'} ${meta.text || 'text-gray-900'} ring-1 ring-offset-1 ring-gray-200`
+                            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                        }`}>
+                        <span className={`w-2 h-2 rounded-full ${meta.color || 'bg-gray-400'} ${chain === c ? 'opacity-100' : 'opacity-30'}`} />
+                        {meta.label || c}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {showChainFilter && showSortOptions && <div className="w-px h-5 bg-gray-200" />}
+
+              {/* Sort */}
+              {showSortOptions && sortOptions[tab]?.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wider mr-1">Sort</span>
+                  {sortOptions[tab].map(([k, l]) => (
+                    <button key={k} onClick={() => setSortBy(k)}
+                      className={`text-xs px-2.5 py-1.5 rounded-lg transition font-medium ${
+                        sortBy === k
+                          ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                      }`}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {(showChainFilter || showSortOptions) && showTvlFilter && <div className="w-px h-5 bg-gray-200" />}
+
+              {/* TVL filter */}
+              {showTvlFilter && (
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wider mr-1">Min TVL</span>
+                  {tvlPresets.map(p => (
+                    <button key={p.value} onClick={() => setMinTvlFilter(p.value)}
+                      className={`text-xs px-2.5 py-1.5 rounded-lg transition font-medium ${
+                        minTvlFilter === p.value
+                          ? 'bg-purple-50 text-purple-700 ring-1 ring-purple-200'
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                      }`}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
-
-          {sortOptions[tab]?.length > 0 && (
-            <div className="flex bg-gray-100 rounded-lg p-0.5">
-              {sortOptions[tab].map(([k, l]) => (
-                <button key={k} onClick={() => setSortBy(k)}
-                  className={`text-xs px-2.5 py-1.5 rounded-md transition ${sortBy === k ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
-                  {l}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search pools, tokens..."
-              className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg w-48 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-          </div>
         </div>
 
+        {/* Trending tab - Card Grid */}
         {tab === 'trending' && (
-          <div className="card p-0 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-sm flex items-center gap-2">
                 <Flame className="w-4 h-4 text-orange-500" />
-                Trending Pools — {chain.charAt(0).toUpperCase() + chain.slice(1)}
-                <span className="text-gray-400 font-normal">({sortedTrending.length} pools)</span>
+                Trending Pools
+                <span className="text-gray-400 font-normal">({sortedTrending.length})</span>
               </h3>
             </div>
-            {loading ? <div className="p-8 text-center text-gray-400">Loading...</div> : sortedTrending.length === 0 ? (
-              <div className="p-8 text-center text-gray-400">No pools found</div>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {sortedTrending.map((pool, i) => {
-                  const tvl = Number(pool.reserve_in_usd || 0)
-                  const vol = Number(pool.volume_usd_24h || 0)
-                  const change = Number(pool.price_change_24h_pct || 0)
-                  const txns = Number(pool.transactions_24h || 0)
-                  const name = pool.name || ''
-                  const [base, quote] = name.includes('/') ? name.split(' / ').map(s => s.trim()) : [name, '']
-                  return (
-                    <div key={i} className="px-4 py-3 hover:bg-gray-50 transition cursor-pointer" onClick={() => setSelectedPool({ ...pool, network: pool.network || chain })}>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400 w-5">#{i + 1}</span>
-                          <span className="font-semibold text-sm">{base}</span>
-                          {quote && <span className="text-gray-400 text-sm">/ {quote}</span>}
-                          <ChainBadge chain={pool.network || pool.chain} />
-                          {pool.dex && <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{pool.dex}</span>}
-                        </div>
-                        <a href={`https://www.geckoTerminal.com/${pool.network || 'eth'}/${name?.replace(' / ', '-')}`}
-                           target="_blank" rel="noopener noreferrer"
-                           className="text-gray-400 hover:text-blue-500 flex items-center gap-1 text-xs">
-                          <span className="hidden sm:inline">Chart</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
-                        <div>
-                          <div className="text-gray-400">Liquidity</div>
-                          <div className="font-semibold">{fmt(tvl)}</div>
-                          <MiniBar value={tvl} max={sortedTrending[0] ? Number(sortedTrending[0].reserve_in_usd || 1) : 1} color="#2563eb" className="mt-1" />
-                        </div>
-                        <div>
-                          <div className="text-gray-400">Volume 24h</div>
-                          <div className="font-semibold">{fmt(vol)}</div>
-                          <MiniBar value={vol} max={sortedTrending[0] ? Number(sortedTrending[0].volume_usd_24h || 1) : 1} color="#16a34a" className="mt-1" />
-                        </div>
-                        <div>
-                          <div className="text-gray-400">Vol/Liq</div>
-                          <div className="font-semibold">{tvl > 0 ? (vol / tvl * 100).toFixed(1) : 0}%</div>
-                        </div>
-                        <div>
-                          <div className="text-gray-400">24h Change</div>
-                          <div className="font-semibold">{pct(change)}</div>
-                        </div>
-                        <div>
-                          <div className="text-gray-400">Txns 24h</div>
-                          <div className="font-semibold">{txns > 0 ? txns.toLocaleString() : '--'}</div>
-                        </div>
-                      </div>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="bg-white border border-gray-100 rounded-xl p-4 animate-pulse">
+                    <div className="h-4 bg-gray-100 rounded w-1/3 mb-3" />
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="h-8 bg-gray-100 rounded" />
+                      <div className="h-8 bg-gray-100 rounded" />
+                      <div className="h-8 bg-gray-100 rounded" />
                     </div>
-                  )
-                })}
+                  </div>
+                ))}
+              </div>
+            ) : sortedTrending.length === 0 ? (
+              <div className="card p-8 text-center text-gray-400">No pools found</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {sortedTrending.map((pool, i) => (
+                  <PoolCard key={i} pool={pool} index={i} maxTvl={maxTvl} maxVol={maxVol}
+                    onClick={() => setSelectedPool({ ...pool, network: pool.network || chain })} />
+                ))}
               </div>
             )}
           </div>
         )}
 
+        {/* Top Pools tab - Card Grid */}
         {tab === 'top' && (
-          <div className="card p-0 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-sm flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-blue-500" />
-                Top Pools by Volume — {chain.charAt(0).toUpperCase() + chain.slice(1)}
-                <span className="text-gray-400 font-normal">({sortedTopPools.length} pools)</span>
+                Top Pools by Volume
+                <span className="text-gray-400 font-normal">({sortedTopPools.length})</span>
               </h3>
             </div>
-            {loading ? <div className="p-8 text-center text-gray-400">Loading...</div> : sortedTopPools.length === 0 ? (
-              <div className="p-8 text-center text-gray-400">No pools found</div>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {sortedTopPools.map((pool, i) => {
-                  const tvl = Number(pool.reserve_in_usd || 0)
-                  const vol = Number(pool.volume_usd_24h || 0)
-                  const change = Number(pool.price_change_24h_pct || 0)
-                  const name = pool.name || ''
-                  const [base, quote] = name.includes('/') ? name.split(' / ').map(s => s.trim()) : [name, '']
-                  return (
-                    <div key={i} className="px-4 py-3 hover:bg-gray-50 transition flex items-center justify-between cursor-pointer" onClick={() => setSelectedPool({ ...pool, network: pool.network || chain })}>
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <span className="text-xs text-gray-400 w-5">#{i + 1}</span>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm">{base}</span>
-                            {quote && <span className="text-gray-400 text-sm">/ {quote}</span>}
-                            <ChainBadge chain={pool.network} />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-6 text-xs">
-                        <div className="text-right w-24"><div className="text-gray-400">Volume</div><div className="font-semibold">{fmt(vol)}</div></div>
-                        <div className="text-right w-24"><div className="text-gray-400">Liquidity</div><div className="font-semibold">{fmt(tvl)}</div></div>
-                        <div className="text-right w-16">{pct(change)}</div>
-                        <a href={`https://www.geckoTerminal.com/${pool.network || 'eth'}/${name?.replace(' / ', '-')}`}
-                           target="_blank" rel="noopener noreferrer"
-                           className="text-gray-400 hover:text-blue-500">
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="bg-white border border-gray-100 rounded-xl p-4 animate-pulse">
+                    <div className="h-4 bg-gray-100 rounded w-1/3 mb-3" />
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="h-8 bg-gray-100 rounded" />
+                      <div className="h-8 bg-gray-100 rounded" />
+                      <div className="h-8 bg-gray-100 rounded" />
                     </div>
-                  )
-                })}
+                  </div>
+                ))}
+              </div>
+            ) : sortedTopPools.length === 0 ? (
+              <div className="card p-8 text-center text-gray-400">No pools found</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {sortedTopPools.map((pool, i) => (
+                  <PoolCard key={i} pool={pool} index={i} maxTvl={maxTvl} maxVol={maxVol}
+                    onClick={() => setSelectedPool({ ...pool, network: pool.network || chain })} />
+                ))}
               </div>
             )}
           </div>
         )}
 
+        {/* Yields tab - Card Grid */}
         {tab === 'yields' && (
-          <div className="card p-0 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-sm flex items-center gap-2">
                 <Coins className="w-4 h-4 text-green-500" />
                 Yield Pools
-                <span className="text-gray-400 font-normal">({sortedYields.length} pools)</span>
+                <span className="text-gray-400 font-normal">({sortedYields.length})</span>
               </h3>
-              <div className="text-xs text-gray-400">Min TVL: $10K</div>
+              <div className="text-xs text-gray-400">Min TVL: {minTvlFilter > 0 ? fmt(minTvlFilter) : '$0'}</div>
             </div>
-            {loading ? <div className="p-8 text-center text-gray-400">Loading...</div> : sortedYields.length === 0 ? (
-              <div className="p-8 text-center text-gray-400">No yield pools found</div>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {sortedYields.map((pool, i) => {
-                  const apy = Number(pool.apy_total || 0)
-                  const tvl = Number(pool.tvl_usd || 0)
-                  const vol1d = Number(pool.volume_usd_1d || 0)
-                  const apyColor = apy > 20 ? 'text-green-600' : apy > 5 ? 'text-blue-600' : apy > 0 ? 'text-gray-700' : 'text-red-500'
-                  const prediction = pool.predictions?.predictedClass || ''
-                  return (
-                    <div key={i} className="px-4 py-3 hover:bg-gray-50 transition">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs text-gray-400 w-5">#{i + 1}</span>
-                          <span className="font-semibold text-sm">{pool.symbol}</span>
-                          <ChainBadge chain={pool.chain} />
-                          <span className="text-xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">{pool.project}</span>
-                          {pool.stablecoin && <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">Stable</span>}
-                          {pool.il_risk === 'yes' && <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">IL</span>}
-                          {prediction && <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{prediction}</span>}
-                        </div>
-                        <div className={`text-lg font-bold ${apyColor}`}>{apy.toFixed(1)}%</div>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
-                        <div><div className="text-gray-400">Base APY</div><div className="font-medium">{Number(pool.apy_base || 0).toFixed(1)}%</div></div>
-                        <div><div className="text-gray-400">Reward APY</div><div className="font-medium">{Number(pool.apy_reward || 0).toFixed(1)}%</div></div>
-                        <div><div className="text-gray-400">TVL</div><div className="font-medium">{fmt(tvl)}</div></div>
-                        <div><div className="text-gray-400">Volume 24h</div><div className="font-medium">{fmt(vol1d)}</div></div>
-                        <div><div className="text-gray-400">Pool</div><div className="font-medium text-gray-400 truncate font-mono text-[10px]">{pool.pool?.slice(0, 16)}...</div></div>
-                      </div>
-                      <div className="mt-2 flex items-center gap-3">
-                        <MiniBar value={apy} max={30} color={apy > 20 ? '#16a34a' : apy > 5 ? '#2563eb' : '#9ca3af'} className="flex-1" />
-                        <span className="text-[10px] text-gray-400 w-12 text-right">7d: {Number(pool.apy_7d || 0).toFixed(1)}%</span>
-                      </div>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="bg-white border border-gray-100 rounded-xl p-4 animate-pulse">
+                    <div className="h-4 bg-gray-100 rounded w-1/3 mb-3" />
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="h-8 bg-gray-100 rounded" />
+                      <div className="h-8 bg-gray-100 rounded" />
+                      <div className="h-8 bg-gray-100 rounded" />
                     </div>
-                  )
-                })}
+                  </div>
+                ))}
+              </div>
+            ) : sortedYields.length === 0 ? (
+              <div className="card p-8 text-center text-gray-400">No yield pools found</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {sortedYields.map((pool, i) => (
+                  <YieldCard key={i} pool={pool} index={i}
+                    onClick={() => setSelectedPool({ ...pool, network: pool.chain, name: pool.symbol })} />
+                ))}
               </div>
             )}
           </div>
         )}
 
+        {/* Hot Pairs tab - Card Grid */}
         {tab === 'hot' && (
-          <div className="card p-0 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-sm flex items-center gap-2">
                 <Zap className="w-4 h-4 text-yellow-500" />
                 Hot DEX Pairs
-                <span className="text-gray-400 font-normal">({sortedHotPairs.length} pairs)</span>
+                <span className="text-gray-400 font-normal">({sortedHotPairs.length})</span>
               </h3>
             </div>
-            {loading ? <div className="p-8 text-center text-gray-400">Loading...</div> : sortedHotPairs.length === 0 ? (
-              <div className="p-8 text-center text-gray-400">No pairs found</div>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {sortedHotPairs.map((pair, i) => {
-                  const vol = Number(pair.volume?.h24 || 0)
-                  const liq = Number(pair.liquidity?.usd || 0)
-                  const price = Number(pair.priceUsd || 0)
-                  const change = Number(pair.priceChange?.h24 || 0)
-                  const txns = Number(pair.txns?.h24?.buys || 0) + Number(pair.txns?.h24?.sells || 0)
-                  return (
-                    <div key={i} className="px-4 py-3 hover:bg-gray-50 transition flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <span className="text-xs text-gray-400 w-5">#{i + 1}</span>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm">{pair.baseToken?.symbol}</span>
-                            <span className="text-gray-400">/</span>
-                            <span className="text-sm">{pair.quoteToken?.symbol}</span>
-                            <ChainBadge chain={pair.chainId} />
-                            <span className="text-xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">{pair.dexId}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-6 text-xs">
-                        <div className="text-right w-20"><div className="text-gray-400">Price</div><div className="font-medium">{fmtPrice(price)}</div></div>
-                        <div className="text-right w-20"><div className="text-gray-400">Volume</div><div className="font-medium">{fmt(vol)}</div></div>
-                        <div className="text-right w-20"><div className="text-gray-400">Liquidity</div><div className="font-medium">{fmt(liq)}</div></div>
-                        <div className="text-right w-16">{pct(change)}</div>
-                        <div className="text-right w-16"><div className="text-gray-400">Txns</div><div className="font-medium">{txns > 0 ? fmtNum(txns) : '--'}</div></div>
-                        <a href={pair.url} target="_blank" rel="noopener noreferrer"
-                           className="text-gray-400 hover:text-blue-500">
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="bg-white border border-gray-100 rounded-xl p-4 animate-pulse">
+                    <div className="h-4 bg-gray-100 rounded w-1/3 mb-3" />
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="h-8 bg-gray-100 rounded" />
+                      <div className="h-8 bg-gray-100 rounded" />
+                      <div className="h-8 bg-gray-100 rounded" />
                     </div>
-                  )
-                })}
+                  </div>
+                ))}
+              </div>
+            ) : sortedHotPairs.length === 0 ? (
+              <div className="card p-8 text-center text-gray-400">No pairs found</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {sortedHotPairs.map((pair, i) => (
+                  <HotPairCard key={i} pair={pair} index={i} onClick={() => {}} />
+                ))}
               </div>
             )}
           </div>
         )}
 
+        {/* Market tab - Table (keeps original layout) */}
         {tab === 'market' && (
           <div className="card p-0 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
               <h3 className="font-semibold text-sm flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-green-500" />
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
                 Top Tokens by Market Cap
                 <span className="text-gray-400 font-normal">({sortedMarket.length} tokens)</span>
               </h3>
@@ -612,13 +828,14 @@ export default function DeFiIntelligence() {
           </div>
         )}
 
+        {/* Protocols tab - Table */}
         {tab === 'protocols' && (
           <div className="card p-0 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100">
               <h3 className="font-semibold text-sm flex items-center gap-2">
                 <Database className="w-4 h-4 text-purple-500" />
                 Top DeFi Protocols
-                <span className="text-gray-400 font-normal">({sortedProtocols.length} protocols)</span>
+                <span className="text-gray-400 font-normal">({sortedProtocols.length})</span>
               </h3>
             </div>
             {loading ? <div className="p-8 text-center text-gray-400">Loading...</div> : sortedProtocols.length === 0 ? (
@@ -643,7 +860,7 @@ export default function DeFiIntelligence() {
                         <div className="text-right w-24"><div className="text-gray-400">TVL</div><div className="font-semibold">{fmt(tvl)}</div></div>
                         <div className="text-right w-16"><div className="text-gray-400">1d</div>{pct(proto.change_1d)}</div>
                         <div className="text-right w-16"><div className="text-gray-400">7d</div>{pct(proto.change_7d)}</div>
-                        <div className="w-32"><MiniBar value={tvl} max={maxTvl} color="#16a34a" /></div>
+                        <div className="w-32"><MiniBar value={tvl} max={maxProtTvl} color="#16a34a" /></div>
                       </div>
                     </div>
                   )
@@ -653,13 +870,14 @@ export default function DeFiIntelligence() {
           </div>
         )}
 
+        {/* L2 tab - Table */}
         {tab === 'l2' && (
           <div className="card p-0 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100">
               <h3 className="font-semibold text-sm flex items-center gap-2">
                 <Layers className="w-4 h-4 text-indigo-500" />
                 L2 Ecosystem
-                <span className="text-gray-400 font-normal">({sortedL2.length} projects)</span>
+                <span className="text-gray-400 font-normal">({sortedL2.length})</span>
               </h3>
             </div>
             {loading ? <div className="p-8 text-center text-gray-400">Loading...</div> : sortedL2.length === 0 ? (
@@ -699,6 +917,7 @@ export default function DeFiIntelligence() {
           </div>
         )}
 
+        {/* Intelligence tab */}
         {tab === 'intel' && (
           <div className="space-y-4">
             {loading ? (
