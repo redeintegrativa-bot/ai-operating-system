@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import ConnectionGate from './components/ConnectionGate'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import MissionControl from './pages/MissionControl'
@@ -17,23 +18,25 @@ import SystemStatus from './pages/SystemStatus'
 
 export default function App() {
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/mission-control" element={<MissionControl />} />
-        <Route path="/capability-map" element={<CapabilityMap />} />
-        <Route path="/chat" element={<Chat />} />
-        <Route path="/agents" element={<Agents />} />
-        <Route path="/tasks" element={<Tasks />} />
-        <Route path="/memory" element={<Memory />} />
-        <Route path="/scheduler" element={<Scheduler />} />
-        <Route path="/plugins" element={<Plugins />} />
-        <Route path="/integrations" element={<Integrations />} />
-        <Route path="/defi" element={<DeFiIntelligence />} />
-        <Route path="/logs" element={<Logs />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/system" element={<SystemStatus />} />
-      </Routes>
-    </Layout>
+    <ConnectionGate>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/mission-control" element={<MissionControl />} />
+          <Route path="/capability-map" element={<CapabilityMap />} />
+          <Route path="/chat" element={<Chat />} />
+          <Route path="/agents" element={<Agents />} />
+          <Route path="/tasks" element={<Tasks />} />
+          <Route path="/memory" element={<Memory />} />
+          <Route path="/scheduler" element={<Scheduler />} />
+          <Route path="/plugins" element={<Plugins />} />
+          <Route path="/integrations" element={<Integrations />} />
+          <Route path="/defi" element={<DeFiIntelligence />} />
+          <Route path="/logs" element={<Logs />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/system" element={<SystemStatus />} />
+        </Routes>
+      </Layout>
+    </ConnectionGate>
   )
 }
