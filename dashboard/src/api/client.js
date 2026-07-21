@@ -36,6 +36,17 @@ export const api = {
   getMarketplace: () => request('GET', '/api/marketplace'),
   getFinances: () => request('GET', '/api/finances'),
   getAnalytics: () => request('GET', '/api/analytics'),
+  getDeFiTrending: (chain = 'ethereum') => request('GET', `/api/defi/trending-pools?chain=${chain}`),
+  getDeFiYields: (chain = 'ethereum', minTvl = 50000) => request('GET', `/api/defi/yields?chain=${chain}&min_tvl=${minTvl}`),
+  getDeFiProtocols: () => request('GET', '/api/defi/top-protocols'),
+  getDeFiOverview: () => request('GET', '/api/defi/overview'),
+  getDeFiMarket: (limit = 50) => request('GET', `/api/defi/market?limit=${limit}`),
+  getDeFIL2: () => request('GET', '/api/defi/l2-overview'),
+  getDeFIIntelligence: () => request('GET', '/api/defi/intelligence'),
+  getDeFIPairs: (chain = 'ethereum', query = 'USDC') => request('GET', `/api/defi/pairs?chain=${chain}&query=${query}`),
+  getDeFITrendingCoins: () => request('GET', '/api/defi/trending-coins'),
+  getDeFIPrices: (ids = 'bitcoin,ethereum,solana') => request('GET', `/api/defi/prices?coin_ids=${ids}`),
+  getDeFiStatus: () => request('GET', '/api/defi/status'),
 }
 
 export function getWsUrl() {
