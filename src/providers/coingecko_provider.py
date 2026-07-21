@@ -84,25 +84,8 @@ class CoinGeckoProvider(BaseDefiProvider):
             return self._mock_fallback(query_type, coin_id=kwargs.get("coin_id", "bitcoin"))
 
     def parse_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
-        if raw_data.get("fallback"):
+        if isinstance(raw_data, dict) and raw_data.get("fallback"):
             return raw_data
-
-        if isinstance(raw_data, dict) and any(key in raw_data for key in ["bitcoin", "ethereum"]):
-            results = []
-            for coin_id, data in raw_data.items():
-                results.append({
-                    "coin_id": coin_id,
-                    "price_usd": data.get("usd", 0),
-                    "market_cap_usd": data.get("usd_market_cap", 0),
-                    "volume_24h_usd": data.get("usd_24h_vol", 0),
-                    "change_24h_pct": data.get("usd_24h_change", 0),
-                })
-            return {
-                "source": "CoinGecko",
-                "query_type": "price",
-                "results": results,
-                "parsed_at": datetime.now().isoformat(),
-            }
 
         if isinstance(raw_data, list):
             tokens = []
