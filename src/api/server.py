@@ -993,16 +993,13 @@ async def defi_pool_detail(
 
         ohlcv = await asyncio.to_thread(_get, f"{base}/networks/{chain}/pools/{pool_address}/ohlcv/{timeframe}?aggregate=60&limit=100")
         if ohlcv:
-            for candle in ohlcv.get("data", []):
-                a = candle.get("attributes", {})
-                result["ohlcv"].append({
-                    "t": a.get("timestamp", 0),
-                    "o": float(a.get("o", 0)),
-                    "h": float(a.get("h", 0)),
-                    "l": float(a.get("l", 0)),
-                    "c": float(a.get("c", 0)),
-                    "v": float(a.get("v", 0)),
-                })
+            raw_ohlcv = ohlcv.get("data", {}).get("attributes", {}).get("ohlcv_list", [])
+            for c in raw_ohlcv:
+                if len(c) >= 6:
+                    result["ohlcv"].append({
+                        "t": c[0], "o": float(c[1]), "h": float(c[2]),
+                        "l": float(c[3]), "c": float(c[4]), "v": float(c[5]),
+                    })
     except Exception as e:
         result["error"] = str(e)
 
