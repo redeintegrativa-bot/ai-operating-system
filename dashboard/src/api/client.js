@@ -1,4 +1,22 @@
-const API_BASE = import.meta.env.VITE_API_URL || ''
+function getApiBase() {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('aios_api_url')
+    if (saved) return saved
+  }
+  return ''
+}
+
+const API_BASE = getApiBase()
+
+export function setApiBase(url) {
+  localStorage.setItem('aios_api_url', url.replace(/\/+$/, ''))
+  window.location.reload()
+}
+
+export function getApiBase() {
+  return API_BASE
+}
 
 async function request(method, path, data) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } }
