@@ -41,7 +41,7 @@ class DefiLlamaProvider(BaseDefiProvider):
             return self._mock_fallback(query_type, **kwargs)
 
     def parse_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
-        if raw_data.get("fallback"):
+        if isinstance(raw_data, dict) and raw_data.get("fallback"):
             return raw_data
 
         protocols = []
