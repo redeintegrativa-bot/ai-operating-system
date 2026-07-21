@@ -115,7 +115,7 @@ function PriceTicker({ prices }) {
     <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
       {prices.map((p, i) => (
         <div key={i} className="flex items-center gap-2 bg-white border border-gray-100 rounded-lg px-3 py-2 flex-shrink-0 shadow-sm">
-          <span className="text-xs font-bold text-gray-700">{p.symbol?.toUpperCase()}</span>
+          <span className="text-xs font-bold text-gray-700 uppercase">{p.symbol || p.coin_id}</span>
           <span className="text-sm font-mono">{fmtPrice(p.price_usd)}</span>
           {pct(p.change_24h_pct)}
         </div>
