@@ -29,6 +29,10 @@ class DefiLlamaProvider(BaseDefiProvider):
                 response = requests.get(f"{base_url}/chains", timeout=kwargs.get("timeout", 10))
                 response.raise_for_status()
                 return response.json()
+            elif query_type == "protocols":
+                response = requests.get(f"{base_url}/protocols", timeout=kwargs.get("timeout", 15))
+                response.raise_for_status()
+                return response.json()
             else:
                 response = requests.get(f"{base_url}/overview/ethereum", timeout=kwargs.get("timeout", 10))
                 response.raise_for_status()

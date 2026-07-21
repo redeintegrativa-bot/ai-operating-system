@@ -987,7 +987,7 @@ async def defi_top_protocols(chain: str = Query("ethereum")):
     from src.providers.defillama_provider import DefiLlamaProvider
     provider = DefiLlamaProvider()
     try:
-        resp = await asyncio.to_thread(provider.get_data, query_type="overview", timeout=10)
+        resp = await asyncio.to_thread(provider.get_data, query_type="yields", timeout=10)
         data = resp.normalized
         return data
     except Exception as e:
