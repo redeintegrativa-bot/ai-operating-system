@@ -1,16 +1,27 @@
 import { useState, useEffect, useCallback } from 'react'
-import { api, getApiBase, setApiBase } from '../api/client'
-import { WifiOff, Link, Loader2, RefreshCw } from 'lucide-react'
+import { getApiBase, setApiBase } from '../api/client'
+import { WifiOff, Link, Loader2, RefreshCw, CheckCircle, XCircle } from 'lucide-react'
 
 export default function ConnectionGate({ children }) {
   const [status, setStatus] = useState('checking')
   const [error, setError] = useState('')
   const [url, setUrl] = useState('')
-  const [retrying, setRetrying] = useState(false)
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState(null)
 
   const check = useCallback(() => {
+    const base = getApiBase()
+    if (!base) {
+      setStatus('disconnected')
+      setError('No API URL configured')
+      return
+    }
     setStatus('checking')
-    api.getHealth()
+    fetch(`${base}/api/health`, { mode: 'cors' })
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then(() => setStatus('connected'))
       .catch(e => {
         setStatus('disconnected')
@@ -20,7 +31,7 @@ export default function ConnectionGate({ children }) {
 
   useEffect(() => {
     check()
-    const interval = setInterval(check, 10000)
+    const interval = setInterval(check, 15000)
     return () => clearInterval(interval)
   }, [check])
 
@@ -39,20 +50,30 @@ export default function ConnectionGate({ children }) {
 
   const currentBase = getApiBase()
 
-  const handleConnect = () => {
-    if (url.trim()) {
-      setApiBase(url.trim())
+  const handleTest = async () => {
+    const testUrl = url.trim()
+    if (!testUrl) return
+    setTesting(true)
+    setTestResult(null)
+    try {
+      const res = await fetch(`${testUrl}/api/health`, { mode: 'cors' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      setTestResult({ ok: true, msg: `Server healthy (v${data.version})` })
+    } catch (e) {
+      setTestResult({ ok: false, msg: e.message })
     }
+    setTesting(false)
+  }
+
+  const handleConnect = () => {
+    const v = url.trim()
+    if (!v) return
+    setApiBase(v)
   }
 
   const handleLocal = () => {
     setApiBase('')
-  }
-
-  const handleRetry = () => {
-    setRetrying(true)
-    check()
-    setTimeout(() => setRetrying(false), 2000)
   }
 
   return (
@@ -64,9 +85,9 @@ export default function ConnectionGate({ children }) {
           <p className="text-sm text-gray-500 mt-1">
             {currentBase
               ? <>Cannot reach <span className="font-mono text-xs break-all">{currentBase}</span></>
-              : 'No API server found on this host'}
+              : 'No API server URL configured'}
           </p>
-          {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
+          {error && <p className="text-xs text-red-400 mt-2">Error: {error}</p>}
         </div>
 
         <div className="space-y-3">
@@ -75,35 +96,44 @@ export default function ConnectionGate({ children }) {
             <input
               type="url"
               value={url}
-              onChange={e => setUrl(e.target.value)}
+              onChange={e => { setUrl(e.target.value); setTestResult(null) }}
               placeholder="https://your-tunnel.trycloudflare.com"
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              onKeyDown={e => e.key === 'Enter' && handleConnect()}
+              onKeyDown={e => e.key === 'Enter' && handleTest()}
             />
           </label>
 
-          <button
-            onClick={handleConnect}
-            disabled={!url.trim()}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Link className="w-4 h-4" /> Connect
-          </button>
-
           <div className="flex gap-2">
             <button
-              onClick={handleRetry}
-              className="flex-1 flex items-center justify-center gap-1.5 bg-gray-100 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-200"
+              onClick={handleTest}
+              disabled={!url.trim() || testing}
+              className="flex-1 flex items-center justify-center gap-1.5 bg-gray-100 text-gray-700 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${retrying ? 'animate-spin' : ''}`} /> Retry
+              {testing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              Test
             </button>
             <button
-              onClick={handleLocal}
-              className="flex-1 text-sm text-gray-500 hover:text-gray-700 py-2 border border-gray-200 rounded-lg"
+              onClick={handleConnect}
+              disabled={!url.trim()}
+              className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
             >
-              localhost:8080
+              <Link className="w-4 h-4" /> Connect
             </button>
           </div>
+
+          {testResult && (
+            <div className={`flex items-center gap-2 text-sm p-2 rounded-lg ${testResult.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+              {testResult.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : <XCircle className="w-4 h-4 flex-shrink-0" />}
+              <span>{testResult.msg}</span>
+            </div>
+          )}
+
+          <button
+            onClick={handleLocal}
+            className="w-full text-sm text-gray-500 hover:text-gray-700 py-2 border border-gray-200 rounded-lg"
+          >
+            Use local server (localhost:8080)
+          </button>
         </div>
 
         <p className="text-xs text-gray-400 mt-4 text-center">
