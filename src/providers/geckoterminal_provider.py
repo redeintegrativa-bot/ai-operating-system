@@ -123,7 +123,10 @@ class GeckoTerminalProvider(BaseDefiProvider):
 
         for item in items[:50]:
             attributes = item.get("attributes", {})
+            raw_id = item.get("id", "")
+            network_from_id = raw_id.split("_")[0] if "_" in raw_id else ""
             pools.append({
+                "address": attributes.get("address", ""),
                 "name": attributes.get("name", ""),
                 "base_token_price_usd": attributes.get("base_token_price_usd", "0"),
                 "quote_token_price_usd": attributes.get("quote_token_price_usd", "0"),
@@ -131,7 +134,7 @@ class GeckoTerminalProvider(BaseDefiProvider):
                 "volume_usd_24h": attributes.get("volume_usd", {}).get("h24", "0"),
                 "price_change_24h_pct": attributes.get("price_change_percentage", {}).get("h24", 0),
                 "transactions_24h": attributes.get("transactions", {}).get("h24", 0),
-                "network": item.get("relationships", {}).get("network", {}).get("data", {}).get("id", ""),
+                "network": network_from_id or item.get("relationships", {}).get("network", {}).get("data", {}).get("id", ""),
                 "dex": item.get("relationships", {}).get("dex", {}).get("data", {}).get("id", ""),
             })
 

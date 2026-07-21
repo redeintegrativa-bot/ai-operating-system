@@ -364,7 +364,7 @@ export default function DeFiIntelligence() {
                   const name = pool.name || ''
                   const [base, quote] = name.includes('/') ? name.split(' / ').map(s => s.trim()) : [name, '']
                   return (
-                    <div key={i} className="px-4 py-3 hover:bg-gray-50 transition">
+                    <div key={i} className="px-4 py-3 hover:bg-gray-50 transition cursor-pointer" onClick={() => setSelectedPool({ ...pool, network: pool.network || chain })}>
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-gray-400 w-5">#{i + 1}</span>
@@ -432,7 +432,7 @@ export default function DeFiIntelligence() {
                   const name = pool.name || ''
                   const [base, quote] = name.includes('/') ? name.split(' / ').map(s => s.trim()) : [name, '']
                   return (
-                    <div key={i} className="px-4 py-3 hover:bg-gray-50 transition flex items-center justify-between">
+                    <div key={i} className="px-4 py-3 hover:bg-gray-50 transition flex items-center justify-between cursor-pointer" onClick={() => setSelectedPool({ ...pool, network: pool.network || chain })}>
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <span className="text-xs text-gray-400 w-5">#{i + 1}</span>
                         <div className="min-w-0">
@@ -806,6 +806,9 @@ export default function DeFiIntelligence() {
           </div>
         )}
       </div>
+      {selectedPool && (
+        <PoolDetail pool={selectedPool} chain={selectedPool.network || chain} onClose={() => setSelectedPool(null)} />
+      )}
     </div>
   )
 }
