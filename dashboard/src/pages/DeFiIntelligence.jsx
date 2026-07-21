@@ -259,11 +259,13 @@ function YieldCard({ pool, index, onClick }) {
 }
 
 function HotPairCard({ pair, index, onClick }) {
-  const vol = Number(pair.volume?.h24 || 0)
-  const liq = Number(pair.liquidity?.usd || 0)
-  const price = Number(pair.priceUsd || 0)
-  const change = Number(pair.priceChange?.h24 || 0)
-  const txns = Number(pair.txns?.h24?.buys || 0) + Number(pair.txns?.h24?.sells || 0)
+  const vol = Number(pair.volume_24h_usd || 0)
+  const liq = Number(pair.liquidity_usd || 0)
+  const price = Number(pair.price_usd || 0)
+  const change = Number(pair.price_change_24h_pct || 0)
+  const buys = Number(pair.txns_24h?.buys || 0)
+  const sells = Number(pair.txns_24h?.sells || 0)
+  const txns = buys + sells
 
   return (
     <div onClick={onClick}
@@ -271,13 +273,13 @@ function HotPairCard({ pair, index, onClick }) {
       <div className="flex items-start justify-between mb-3">
         <div>
           <div className="flex items-center gap-1.5 mb-1">
-            <span className="font-bold text-base text-gray-900">{pair.baseToken?.symbol}</span>
+            <span className="font-bold text-base text-gray-900">{pair.base_token?.symbol}</span>
             <span className="text-gray-300">/</span>
-            <span className="text-gray-500 font-medium">{pair.quoteToken?.symbol}</span>
+            <span className="text-gray-500 font-medium">{pair.quote_token?.symbol}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <ChainBadge chain={pair.chainId} size="xs" />
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium uppercase">{pair.dexId}</span>
+            <ChainBadge chain={pair.chain_id} size="xs" />
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium uppercase">{pair.dex_id}</span>
           </div>
         </div>
         <div className={`text-right px-2 py-1 rounded-lg ${pctBg(change)}`}>
@@ -299,6 +301,18 @@ function HotPairCard({ pair, index, onClick }) {
           <div className="text-sm font-bold text-gray-900">{fmt(liq)}</div>
         </div>
       </div>
+
+      {txns > 0 && (
+        <div className="mt-2 flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
+            <div className="h-full bg-green-400 rounded-l-full transition-all duration-500"
+                 style={{ width: `${buys + sells > 0 ? (buys / (buys + sells) * 100) : 50}%` }} />
+            <div className="h-full bg-red-300 rounded-r-full transition-all duration-500"
+                 style={{ width: `${buys + sells > 0 ? (sells / (buys + sells) * 100) : 50}%` }} />
+          </div>
+          <span className="text-[10px] text-gray-400 flex-shrink-0">{fmtNum(txns)} txns</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -419,8 +433,8 @@ export default function DeFiIntelligence() {
   }, [yields, sortBy, searchLower, minTvlFilter])
 
   const sortedHotPairs = useMemo(() => {
-    return filterByName(hotPairs, 'baseToken').sort((a, b) => {
-      return Number(b.volume?.h24 || 0) - Number(a.volume?.h24 || 0)
+    return filterByName(hotPairs, 'base_token').sort((a, b) => {
+      return Number(b.volume_24h_usd || 0) - Number(a.volume_24h_usd || 0)
     })
   }, [hotPairs, searchLower])
 
