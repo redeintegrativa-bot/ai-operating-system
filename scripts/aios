@@ -129,8 +129,7 @@ cmd_start() {
   local log_file="$LOG_DIR/aios-$(date +%Y%m%d-%H%M%S).log"
 
   cd "$PROJECT_ROOT"
-  export PYTHONPATH="$PROJECT_ROOT"
-  setsid "$PYTHON" -m src.api.server --port "$API_PORT" > "$log_file" 2>&1 &
+  PYTHONPATH="$PROJECT_ROOT" setsid "$PYTHON" -m src.api.server --port "$API_PORT" > "$log_file" 2>&1 &
   local pid=$!
   echo "$pid" > "$PID_FILE"
 
