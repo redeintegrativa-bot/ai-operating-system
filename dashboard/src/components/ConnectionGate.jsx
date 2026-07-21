@@ -1,54 +1,51 @@
-import { useState, useEffect, useCallback } from 'react'
-import { getApiBase, setApiBase } from '../api/client'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { setApiBase } from '../api/client'
 import { WifiOff, Link, Loader2, RefreshCw, CheckCircle, XCircle } from 'lucide-react'
 
+function tryConnect(url) {
+  return fetch(`${url.replace(/\/+$/, '')}/api/health`, { mode: 'cors' })
+    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
+}
+
 export default function ConnectionGate({ children }) {
-  const [status, setStatus] = useState('checking')
+  const [connected, setConnected] = useState(false)
+  const [checking, setChecking] = useState(true)
   const [error, setError] = useState('')
   const [url, setUrl] = useState('')
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState(null)
+  const mountedRef = useRef(true)
 
-  const check = useCallback(() => {
-    const base = getApiBase()
-    if (!base) {
-      setStatus('disconnected')
-      setError('No API URL configured')
+  useEffect(() => { return () => { mountedRef.current = false } }, [])
+
+  const savedUrl = typeof window !== 'undefined' ? localStorage.getItem('aios_api_url') : null
+
+  const check = useCallback((targetUrl) => {
+    if (!targetUrl) {
+      setChecking(false)
+      setConnected(false)
       return
     }
-    setStatus('checking')
-    fetch(`${base}/api/health`, { mode: 'cors' })
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
-        return r.json()
+    setChecking(true)
+    tryConnect(targetUrl)
+      .then(() => {
+        if (mountedRef.current) { setConnected(true); setChecking(false) }
       })
-      .then(() => setStatus('connected'))
       .catch(e => {
-        setStatus('disconnected')
-        setError(e.message)
+        if (mountedRef.current) { setConnected(false); setChecking(false); setError(e.message) }
       })
   }, [])
 
+  useEffect(() => { check(savedUrl) }, [check, savedUrl])
+
   useEffect(() => {
-    check()
-    const interval = setInterval(check, 15000)
-    return () => clearInterval(interval)
-  }, [check])
-
-  if (status === 'connected') return children
-
-  if (status === 'checking') {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-gray-500">Connecting to AIOS...</p>
-        </div>
-      </div>
-    )
-  }
-
-  const currentBase = getApiBase()
+    if (!connected) return
+    const iv = setInterval(() => {
+      const u = localStorage.getItem('aios_api_url')
+      if (u) tryConnect(u).catch(() => { if (mountedRef.current) setConnected(false) })
+    }, 10000)
+    return () => clearInterval(iv)
+  }, [connected])
 
   const handleTest = async () => {
     const testUrl = url.trim()
@@ -56,9 +53,7 @@ export default function ConnectionGate({ children }) {
     setTesting(true)
     setTestResult(null)
     try {
-      const res = await fetch(`${testUrl}/api/health`, { mode: 'cors' })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
+      const data = await tryConnect(testUrl)
       setTestResult({ ok: true, msg: `Server healthy (v${data.version})` })
     } catch (e) {
       setTestResult({ ok: false, msg: e.message })
@@ -66,14 +61,42 @@ export default function ConnectionGate({ children }) {
     setTesting(false)
   }
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     const v = url.trim()
     if (!v) return
-    setApiBase(v)
+    setTesting(true)
+    setTestResult(null)
+    try {
+      await tryConnect(v)
+      localStorage.setItem('aios_api_url', v.replace(/\/+$/, ''))
+      if (mountedRef.current) setConnected(true)
+    } catch (e) {
+      setTestResult({ ok: false, msg: e.message })
+    }
+    setTesting(false)
   }
 
   const handleLocal = () => {
-    setApiBase('')
+    localStorage.removeItem('aios_api_url')
+    window.location.reload()
+  }
+
+  const handleDisconnect = () => {
+    localStorage.removeItem('aios_api_url')
+    if (mountedRef.current) { setConnected(false); setUrl(''); setTestResult(null) }
+  }
+
+  if (connected) return children
+
+  if (checking && savedUrl) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-4" />
+          <p className="text-gray-500">Connecting to {savedUrl}...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -82,12 +105,10 @@ export default function ConnectionGate({ children }) {
         <div className="text-center mb-6">
           <WifiOff className="w-12 h-12 text-red-400 mx-auto mb-3" />
           <h2 className="text-xl font-bold text-gray-900">Disconnected</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            {currentBase
-              ? <>Cannot reach <span className="font-mono text-xs break-all">{currentBase}</span></>
-              : 'No API server URL configured'}
-          </p>
           {error && <p className="text-xs text-red-400 mt-2">Error: {error}</p>}
+          {savedUrl && !connected && (
+            <p className="text-xs text-gray-400 mt-1">Last: {savedUrl}</p>
+          )}
         </div>
 
         <div className="space-y-3">
@@ -114,7 +135,7 @@ export default function ConnectionGate({ children }) {
             </button>
             <button
               onClick={handleConnect}
-              disabled={!url.trim()}
+              disabled={!url.trim() || testing}
               className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
             >
               <Link className="w-4 h-4" /> Connect
