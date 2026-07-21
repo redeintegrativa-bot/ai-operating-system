@@ -75,7 +75,7 @@ class L2BeatProvider(BaseDefiProvider):
                 "stage": project.get("stage", ""),
                 "type": project.get("type", ""),
                 "host_chain": project.get("hostChain", ""),
-                "tvl_usd": tvl * 1e6 if tvl and tvl < 100000 else tvl,
+                "tvl_usd": tvl * 1e6 if tvl and tvl < 10 else tvl,
                 "change_7d_tvl_pct": (tvs_data.get("change7d", 0) or 0) * 100 if isinstance(tvs_data, dict) else 0,
                 "purposes": project.get("purposes", []),
                 "providers": project.get("providers", []),
