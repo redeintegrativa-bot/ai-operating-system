@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { api, getApiBase, setApiBase } from '../api/client'
-import { WifiOff, Link, Loader2 } from 'lucide-react'
+import { WifiOff, Link, Loader2, RefreshCw } from 'lucide-react'
 
 export default function ConnectionGate({ children }) {
   const [status, setStatus] = useState('checking')
   const [error, setError] = useState('')
   const [url, setUrl] = useState('')
+  const [retrying, setRetrying] = useState(false)
 
-  useEffect(() => {
+  const check = useCallback(() => {
+    setStatus('checking')
     api.getHealth()
       .then(() => setStatus('connected'))
       .catch(e => {
@@ -15,6 +17,12 @@ export default function ConnectionGate({ children }) {
         setError(e.message)
       })
   }, [])
+
+  useEffect(() => {
+    check()
+    const interval = setInterval(check, 10000)
+    return () => clearInterval(interval)
+  }, [check])
 
   if (status === 'connected') return children
 
@@ -41,6 +49,12 @@ export default function ConnectionGate({ children }) {
     setApiBase('')
   }
 
+  const handleRetry = () => {
+    setRetrying(true)
+    check()
+    setTimeout(() => setRetrying(false), 2000)
+  }
+
   return (
     <div className="flex h-screen items-center justify-center bg-gray-50">
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
@@ -49,7 +63,7 @@ export default function ConnectionGate({ children }) {
           <h2 className="text-xl font-bold text-gray-900">Disconnected</h2>
           <p className="text-sm text-gray-500 mt-1">
             {currentBase
-              ? `Cannot reach ${currentBase}`
+              ? <>Cannot reach <span className="font-mono text-xs break-all">{currentBase}</span></>
               : 'No API server found on this host'}
           </p>
           {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
@@ -76,12 +90,20 @@ export default function ConnectionGate({ children }) {
             <Link className="w-4 h-4" /> Connect
           </button>
 
-          <button
-            onClick={handleLocal}
-            className="w-full text-sm text-gray-500 hover:text-gray-700 py-1"
-          >
-            Use local server (localhost:8080)
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleRetry}
+              className="flex-1 flex items-center justify-center gap-1.5 bg-gray-100 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-200"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${retrying ? 'animate-spin' : ''}`} /> Retry
+            </button>
+            <button
+              onClick={handleLocal}
+              className="flex-1 text-sm text-gray-500 hover:text-gray-700 py-2 border border-gray-200 rounded-lg"
+            >
+              localhost:8080
+            </button>
+          </div>
         </div>
 
         <p className="text-xs text-gray-400 mt-4 text-center">
