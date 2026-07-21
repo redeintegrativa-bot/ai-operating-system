@@ -32,8 +32,8 @@ class MarketIntelligence:
         if dex_screener_data:
             insights["sections"]["liquidity_heatmap"] = self._analyze_liquidity(dex_screener_data)
 
-        if l_2_beat_data:
-            insights["sections"]["l2_market"] = self._analyze_l2(l_2_beat_data)
+        if l2_beat_data:
+            insights["sections"]["l2_market"] = self._analyze_l2(l2_beat_data)
 
         if historical_data:
             insights["sections"]["trend_analysis"] = self._analyze_trends(historical_data)
@@ -236,7 +236,7 @@ class MarketIntelligence:
         timestamps = [h.get("timestamp", datetime.now()) for h in historical_data]
 
         price_ma = mean(prices) if prices else 0
-        volume_ma = mean(velumes) if volumes else 0
+        volume_ma = mean(volumes) if volumes else 0
         price_sd = stdev(prices) if len(prices) > 1 else 0
 
         total_return = ((prices[-1] - prices[0]) / prices[0] * 100) if prices[0] > 0 else 0
@@ -266,7 +266,7 @@ class MarketIntelligence:
         medium = 0
         low = 0
 
-        for asset, change in price_changes:
+        for asset, change in price_changes.items():
             abs_change = abs(change)
             if abs_change > 10:
                 high += 1

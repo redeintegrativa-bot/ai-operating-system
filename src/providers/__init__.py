@@ -1,6 +1,6 @@
 from .base_provider import BaseDefiProvider, ProviderResponse
-from .defillama_provider import DefiLlamaProvider
-from .coingecko_provider import CoinGeckoProvider
+from .defillama_provider import DefiLlamaProvider, DefiLlamaYieldsProvider
+from .coingecko_provider import CoinGeckoProvider, CoinGeckoCategoriesProvider
 from .dexscreener_provider import DexScreenerProvider
 from .geckoterminal_provider import GeckoTerminalProvider
 from .debank_provider import DeBankProvider
@@ -8,7 +8,9 @@ from .l2beat_provider import L2BeatProvider
 
 AVAILABLE_PROVIDERS = {
     "defillama": DefiLlamaProvider,
+    "defillama_yields": DefiLlamaYieldsProvider,
     "coingecko": CoinGeckoProvider,
+    "coingecko_categories": CoinGeckoCategoriesProvider,
     "dexscreener": DexScreenerProvider,
     "geckoterminal": GeckoTerminalProvider,
     "debank": DeBankProvider,
@@ -28,7 +30,9 @@ __all__ = [
     "BaseDefiProvider",
     "ProviderResponse",
     "DefiLlamaProvider",
+    "DefiLlamaYieldsProvider",
     "CoinGeckoProvider",
+    "CoinGeckoCategoriesProvider",
     "DexScreenerProvider",
     "GeckoTerminalProvider",
     "DeBankProvider",
