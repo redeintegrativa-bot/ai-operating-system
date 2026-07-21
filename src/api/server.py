@@ -923,12 +923,25 @@ async def taskcenter_delete(task_id: str):
 # DeFi Intelligence Endpoints
 # ---------------------------------------------------------------------------
 
+@app.get("/api/defi/status")
+async def defi_provider_status():
+    from src.providers import get_all_providers
+    providers = get_all_providers()
+    result = {}
+    for name, provider in providers.items():
+        try:
+            available = await asyncio.to_thread(provider.is_available)
+            result[name] = {"available": available}
+        except Exception as e:
+            result[name] = {"available": False, "error": str(e)}
+    return {"providers": result}
+
 @app.get("/api/defi/trending-pools")
 async def defi_trending_pools(chain: str = Query("ethereum")):
     from src.providers.geckoterminal_provider import GeckoTerminalProvider
     provider = GeckoTerminalProvider()
     try:
-        resp = provider.get_data(query_type="trending_pools", chain=chain, timeout=8)
+        resp = await asyncio.to_thread(provider.get_data, query_type="trending_pools", chain=chain, timeout=8)
         return resp.normalized
     except Exception as e:
         return {"error": str(e), "pools": []}
@@ -942,7 +955,7 @@ async def defi_yields(
     from src.providers.defillama_provider import DefiLlamaYieldsProvider
     provider = DefiLlamaYieldsProvider()
     try:
-        resp = provider.get_data(timeout=15)
+        resp = await asyncio.to_thread(provider.get_data, timeout=15)
         data = resp.normalized
         pools = data.get("top_yields", [])
         if chain:
@@ -961,7 +974,7 @@ async def defi_pairs(chain: str = Query("ethereum"), query: str = Query("USDC"))
     from src.providers.dexscreener_provider import DexScreenerProvider
     provider = DexScreenerProvider()
     try:
-        resp = provider.get_data(query_type="search", query=query, timeout=8)
+        resp = await asyncio.to_thread(provider.get_data, query_type="search", query=query, timeout=8)
         data = resp.normalized
         pairs = data.get("pairs", [])
         pairs = [p for p in pairs if p.get("chain_id", "").lower() == chain.lower()]
@@ -974,11 +987,91 @@ async def defi_top_protocols(chain: str = Query("ethereum")):
     from src.providers.defillama_provider import DefiLlamaProvider
     provider = DefiLlamaProvider()
     try:
-        resp = provider.get_data(query_type="overview", timeout=10)
+        resp = await asyncio.to_thread(provider.get_data, query_type="overview", timeout=10)
         data = resp.normalized
         return data
     except Exception as e:
         return {"error": str(e), "top_protocols": []}
+
+@app.get("/api/defi/prices")
+async def defi_prices(coin_ids: str = Query("bitcoin,ethereum,solana,binancecoin,cardano")):
+    from src.providers.coingecko_provider import CoinGeckoProvider
+    provider = CoinGeckoProvider()
+    try:
+        resp = await asyncio.to_thread(provider.get_data, query_type="price", coin_id=coin_ids, timeout=10)
+        return resp.normalized
+    except Exception as e:
+        return {"error": str(e), "results": []}
+
+@app.get("/api/defi/market")
+async def defi_market(limit: int = Query(50), category: str = Query("")):
+    from src.providers.coingecko_provider import CoinGeckoProvider
+    provider = CoinGeckoProvider()
+    try:
+        kwargs = {"query_type": "coin_markets", "limit": limit, "timeout": 10}
+        if category:
+            kwargs["category"] = category
+        resp = await asyncio.to_thread(provider.get_data, **kwargs)
+        return resp.normalized
+    except Exception as e:
+        return {"error": str(e), "tokens": []}
+
+@app.get("/api/defi/trending-coins")
+async def defi_trending_coins():
+    from src.providers.coingecko_provider import CoinGeckoProvider
+    provider = CoinGeckoProvider()
+    try:
+        resp = await asyncio.to_thread(provider.get_data, query_type="trending", timeout=10)
+        return resp.normalized
+    except Exception as e:
+        return {"error": str(e), "coins": []}
+
+@app.get("/api/defi/l2-overview")
+async def defi_l2_overview():
+    from src.providers.l2beat_provider import L2BeatProvider
+    provider = L2BeatProvider()
+    try:
+        resp = await asyncio.to_thread(provider.get_data, query_type="overview", timeout=10)
+        return resp.normalized
+    except Exception as e:
+        return {"error": str(e), "projects": []}
+
+@app.get("/api/defi/intelligence")
+async def defi_intelligence():
+    from src.intelligence.market_intelligence import MarketIntelligence
+    from src.providers.geckoterminal_provider import GeckoTerminalProvider
+    from src.providers.defillama_provider import DefiLlamaProvider, DefiLlamaYieldsProvider
+    from src.providers.coingecko_provider import CoinGeckoProvider
+    from src.providers.dexscreener_provider import DexScreenerProvider
+    from src.providers.l2beat_provider import L2BeatProvider
+
+    mi = MarketIntelligence()
+    results = {}
+
+    def _fetch(name, cls, **kwargs):
+        try:
+            p = cls()
+            r = p.get_data(**kwargs)
+            return r.normalized
+        except Exception:
+            return None
+
+    defillama_data = await asyncio.to_thread(_fetch, "defillama", DefiLlamaProvider, query_type="overview", timeout=10)
+    coingecko_data = await asyncio.to_thread(_fetch, "coingecko", CoinGeckoProvider, query_type="coin_markets", limit=50, timeout=10)
+    dex_data = await asyncio.to_thread(_fetch, "dexscreener", DexScreenerProvider, query_type="search", query="USDC", timeout=10)
+    l2_data = await asyncio.to_thread(_fetch, "l2beat", L2BeatProvider, query_type="overview", timeout=10)
+
+    try:
+        results = mi.analyze(
+            defillama_data=defillama_data,
+            coingecko_data=coingecko_data,
+            dex_screener_data=dex_data,
+            l2_beat_data=l2_data,
+        )
+    except Exception as e:
+        results = {"error": str(e), "sections": {}}
+
+    return results
 
 @app.get("/api/defi/overview")
 async def defi_overview():
@@ -988,16 +1081,16 @@ async def defi_overview():
     dl = DefiLlamaYieldsProvider()
     result = {"trending_pools": [], "top_yields": [], "stats": {}}
     try:
-        r1 = gt.get_data(query_type="trending_pools", chain="ethereum", timeout=8)
+        r1 = await asyncio.to_thread(gt.get_data, query_type="trending_pools", chain="ethereum", timeout=8)
         result["trending_pools"] = r1.normalized.get("pools", [])[:10]
-    except:
+    except Exception:
         pass
     try:
-        r2 = dl.get_data(timeout=15)
+        r2 = await asyncio.to_thread(dl.get_data, timeout=15)
         y = r2.normalized
         result["top_yields"] = y.get("top_yields", [])[:10]
         result["stats"] = {"pool_count": y.get("pool_count", 0), "total_tvl": y.get("total_tvl_usd", 0), "avg_apy": y.get("average_apy", 0)}
-    except:
+    except Exception:
         pass
     return result
 
