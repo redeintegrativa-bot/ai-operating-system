@@ -1,22 +1,4 @@
-function resolveApiBase() {
-  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('aios_api_url')
-    if (saved) return saved
-  }
-  return ''
-}
-
-const API_BASE = resolveApiBase()
-
-export function getApiBase() {
-  return API_BASE
-}
-
-export function setApiBase(url) {
-  localStorage.setItem('aios_api_url', url.replace(/\/+$/, ''))
-  window.location.reload()
-}
+const API_BASE = ''
 
 async function request(method, path, data) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } }
@@ -57,12 +39,6 @@ export const api = {
 }
 
 export function getWsUrl() {
-  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL
-  if (API_BASE) {
-    const url = new URL(API_BASE)
-    const proto = url.protocol === 'https:' ? 'wss:' : 'ws:'
-    return `${proto}//${url.host}/ws`
-  }
   const loc = window.location
   const proto = loc.protocol === 'https:' ? 'wss:' : 'ws:'
   return `${proto}//${loc.host}/ws`
