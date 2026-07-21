@@ -949,23 +949,29 @@ async def defi_trending_pools(chain: str = Query("ethereum")):
 @app.get("/api/defi/yields")
 async def defi_yields(
     chain: Optional[str] = Query(None),
-    min_tvl: float = Query(100000),
+    min_tvl: float = Query(10000),
     sort: str = Query("apy"),
+    limit: int = Query(100),
 ):
     from src.providers.defillama_provider import DefiLlamaYieldsProvider
     provider = DefiLlamaYieldsProvider()
     try:
         resp = await asyncio.to_thread(provider.get_data, timeout=15)
         data = resp.normalized
-        pools = data.get("top_yields", [])
+        pools = data.get("all_pools", data.get("top_yields", []))
         if chain:
             pools = [p for p in pools if p.get("chain", "").lower() == chain.lower()]
         pools = [p for p in pools if (p.get("tvl_usd", 0) or 0) >= min_tvl]
         if sort == "tvl":
             pools.sort(key=lambda x: x.get("tvl_usd", 0) or 0, reverse=True)
+        elif sort == "volume":
+            pools.sort(key=lambda x: x.get("volume_usd_1d", 0) or 0, reverse=True)
+        elif sort == "stable":
+            pools = [p for p in pools if p.get("stablecoin")]
+            pools.sort(key=lambda x: x.get("apy_total", 0) or 0, reverse=True)
         else:
             pools.sort(key=lambda x: x.get("apy_total", 0) or 0, reverse=True)
-        return {"source": data.get("source", "DefiLlama"), "pools": pools[:50], "total_pools": data.get("pool_count", 0)}
+        return {"source": data.get("source", "DefiLlama"), "pools": pools[:limit], "total_pools": data.get("pool_count", 0), "total_tvl": data.get("total_tvl_usd", 0)}
     except Exception as e:
         return {"error": str(e), "pools": []}
 
@@ -1088,7 +1094,9 @@ async def defi_overview():
     try:
         r2 = await asyncio.to_thread(dl.get_data, timeout=15)
         y = r2.normalized
-        result["top_yields"] = y.get("top_yields", [])[:10]
+        all_pools = y.get("all_pools", y.get("top_yields", []))
+        top_y = sorted(all_pools, key=lambda x: x.get("apy_total", 0), reverse=True)[:10]
+        result["top_yields"] = top_y
         result["stats"] = {"pool_count": y.get("pool_count", 0), "total_tvl": y.get("total_tvl_usd", 0), "avg_apy": y.get("average_apy", 0)}
     except Exception:
         pass
