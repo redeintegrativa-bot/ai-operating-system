@@ -60,8 +60,7 @@ No typecheck configured (mypy in requirements.txt but no mypy.ini or pyproject.t
 
 ## Key config files
 - `config/default.json` — System settings (LLM providers, Redis, agents_config)
-- `config/agents.yaml` — Agent config (currently empty stub)
-- `.env.example` — Environment template
+- `.env.example` — Environment template (copy to `.env`, gitignored)
 - Agent modes stored in `.aios/agents/{name}.json`
 - `vercel.json` — Vercel deployment config (builds dashboard, serves from dashboard/dist)
 - `.vercel/project.json` — Vercel project linking (org: redeintegrativa-1029)
@@ -83,10 +82,11 @@ No typecheck configured (mypy in requirements.txt but no mypy.ini or pyproject.t
 - `task_manager` persists state to `.task_manager/` — clean between test runs
 
 ## Caveats & gotchas
-- Stubs: `message_bus.py`, `agent_registry.py`, `scripts/setup.sh`, `scripts/start.sh`, `config/settings.py`
-- `src/providers/` has DeFi data providers (coingecko, defillama, etc.) — not wired into agents yet
-- Two separate `Task`/`TaskStatus` dataclasses: `core/orchestrator.py` vs `core/task_manager.py`
-- Two separate `AgentStatus` enums: `core/orchestrator.py` vs `agents/base_agent.py`
+- Stubs: `message_bus.py`, `agent_registry.py`, `scripts/setup.sh`, `scripts/start.sh`, `config/settings.py`, `config/agents.yaml` — all contain only comments, no implementation
+- `src/providers/` has DeFi data providers (coingecko, defillama, dexscreener, etc.) — not wired into agents yet
+- Two separate `Task`/`TaskStatus` dataclasses: `core/orchestrator.py` vs `core/task_manager.py` — different fields, not interchangeable
+- Two separate `AgentStatus` enums: `core/orchestrator.py` (IDLE, BUSY) vs `agents/base_agent.py` (IDLE, BUSY, FAILED, OFFLINE)
 - Backup daemon (`scripts/auto_backup.sh`) auto-pushes commits — aware when testing
 - Dashboard: `frontend/` is legacy HTML/CSS/JS; `dashboard/` is the React app (use this)
-- `config/agents.yaml` is an empty stub — agent routing config lives in `.aios/agents/` and `AGENT_REGISTRY` in `src/agents/__init__.py`
+- `.gitignore` ignores `.env*` — `.env.example` is tracked, `.env` is not
+- Sibling project `../maia-content-engine/` is a separate Next.js app (not part of this system)
