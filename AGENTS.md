@@ -17,6 +17,7 @@ scripts/aios deploy         # Deploy dashboard to Vercel (preview)
 scripts/aios deploy --prod  # Deploy to Vercel (production)
 scripts/aios logs           # Tail server logs
 ```
+Python deps: `pip install -r requirements.txt`. Node deps only needed for dashboard (`cd dashboard && npm install`).
 
 ## Web Deployment Architecture
 - **Vercel** (https://ai-operating-system-sable.vercel.app): Serves the React dashboard (static files)
@@ -46,10 +47,12 @@ pytest tests/test_orchestrator.py::test_route_task  # single test
 pytest -m "not integration and not slow"            # skip slow/integration
 ruff check src/ tests/                              # lint
 ```
+No typecheck configured (mypy in requirements.txt but no mypy.ini or pyproject.toml config).
 
 ## Architecture
 - **Event-driven multi-agent system**: EventBus (pub/sub) + Orchestrator (keyword routing) + AIOSKernel (AgentManager, HeartbeatMonitor, Scheduler)
 - **Entrypoint**: `AIOS` class in `src/core/system.py` — `python -m src.core.system`
+- **API server**: `src/api/server.py` — `python -m src.api.server --port 8080` (FastAPI, serves dashboard)
 - **Agent factory**: `src/agents/__init__.py` — `AGENT_REGISTRY` dict. Agents: orchestrator, architect, engineer, researcher, ai_specialist, automation, database, security, browser. Note: `crypto_researcher/` exists on disk but is not registered.
 - **Two routing layers**: `Orchestrator` (src/core/orchestrator.py) routes via keyword matching. `AIOSKernel` (src/core/kernel.py) has its own AgentConfig/AgentMode in `.aios/agents/`. Connected via `set_orchestrator()`.
 - **Two API servers**: `src/api/server.py` (FastAPI, port 8080, serves dashboard) and `src/api/kernel_api.py` (JSON, port 8000)
