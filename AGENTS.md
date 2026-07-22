@@ -57,6 +57,7 @@ ruff check src/ tests/                              # lint
 
 ## Key config files
 - `config/default.json` — System settings (LLM providers, Redis, agents_config)
+- `config/agents.yaml` — Agent config (currently empty stub)
 - `.env.example` — Environment template
 - Agent modes stored in `.aios/agents/{name}.json`
 - `vercel.json` — Vercel deployment config (builds dashboard, serves from dashboard/dist)
@@ -85,3 +86,4 @@ ruff check src/ tests/                              # lint
 - Two separate `AgentStatus` enums: `core/orchestrator.py` vs `agents/base_agent.py`
 - Backup daemon (`scripts/auto_backup.sh`) auto-pushes commits — aware when testing
 - Dashboard: `frontend/` is legacy HTML/CSS/JS; `dashboard/` is the React app (use this)
+- `config/agents.yaml` is an empty stub — agent routing config lives in `.aios/agents/` and `AGENT_REGISTRY` in `src/agents/__init__.py`
