@@ -2,16 +2,20 @@
 
 ## Quick start
 ```bash
-scripts/aios start       # Start API server (port 8080)
-scripts/aios dashboard   # Start + open dashboard in browser
-scripts/aios status      # Show system status
-scripts/aios stop        # Stop server
-scripts/aios build       # Build dashboard (Vite)
-scripts/aios tunnel      # Start Cloudflare tunnel (exposes local API publicly)
-scripts/aios tunnel stop # Stop tunnel
-scripts/aios deploy      # Deploy dashboard to Vercel (preview)
+scripts/aios start          # Start API server (port 8080)
+scripts/aios restart        # Restart API server
+scripts/aios dashboard      # Start + open dashboard in browser
+scripts/aios serve          # Start server + Cloudflare tunnel (full stack)
+scripts/aios serve --deploy # Serve + tunnel + update Vercel env + deploy
+scripts/aios status         # Show system status
+scripts/aios stop           # Stop server (also stops tunnel)
+scripts/aios build          # Build dashboard (Vite)
+scripts/aios tunnel         # Start Cloudflare tunnel (exposes local API publicly)
+scripts/aios tunnel stop    # Stop tunnel
+scripts/aios tunnel logs    # Tail tunnel logs
+scripts/aios deploy         # Deploy dashboard to Vercel (preview)
 scripts/aios deploy --prod  # Deploy to Vercel (production)
-scripts/aios logs        # Tail logs
+scripts/aios logs           # Tail server logs
 ```
 
 ## Web Deployment Architecture
