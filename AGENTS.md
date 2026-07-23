@@ -85,7 +85,7 @@ No typecheck configured (mypy in requirements.txt but no mypy.ini or pyproject.t
 - Stubs: `message_bus.py`, `agent_registry.py`, `scripts/setup.sh`, `scripts/start.sh`, `config/settings.py`, `config/agents.yaml` — all contain only comments, no implementation
 - `src/providers/` has DeFi data providers (coingecko, defillama, dexscreener, etc.) — not wired into agents yet
 - Two separate `Task`/`TaskStatus` dataclasses: `core/orchestrator.py` vs `core/task_manager.py` — different fields, not interchangeable
-- Two separate `AgentStatus` enums: `core/orchestrator.py` (IDLE, BUSY) vs `agents/base_agent.py` (IDLE, BUSY, FAILED, OFFLINE)
+- Two separate `AgentStatus` enums: `core/orchestrator.py` (IDLE, BUSY, FAILED) vs `agents/base_agent.py` (IDLE, BUSY, FAILED, OFFLINE)
 - Backup daemon (`scripts/auto_backup.sh`) auto-pushes commits — aware when testing
 - Dashboard: `frontend/` is legacy HTML/CSS/JS; `dashboard/` is the React app (use this)
 - `.gitignore` ignores `.env*` — `.env.example` is tracked, `.env` is not
